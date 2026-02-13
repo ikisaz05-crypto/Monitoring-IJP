@@ -238,12 +238,12 @@
      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
       <form id="monitoring-form" class="space-y-6">
        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div><label for="line" class="block text-sm font-bold text-gray-700 dark:text-gray-300 uppercase mb-2">LINE</label> <select id="line" name="line" required class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white uppercase focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"> <option value="">SELECT LINE</option> <option value="LINE01">LINE01</option> <option value="LINE02">LINE02</option> <option value="LINE03">LINE03</option> <option value="LINE04">LINE04</option> <option value="LINE05">LINE05</option> <option value="LINE06">LINE06</option> <option value="LINE07">LINE07</option> <option value="LINE08">LINE08</option> <option value="LINE09">LINE09</option> </select>
+        <div><label for="machine_dropdown" class="block text-sm font-bold text-gray-700 dark:text-gray-300 uppercase mb-2">MESIN / MACHINE</label> <select id="machine_dropdown" name="machine_dropdown" required class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white uppercase focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"> <option value="">-- SELECT MACHINE --</option> </select>
         </div>
-        <div><label for="serial_number" class="block text-sm font-bold text-gray-700 dark:text-gray-300 uppercase mb-2">SERIAL NUMBER IJP</label> <input type="text" id="serial_number" name="serial_number" required class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white uppercase focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" placeholder="ENTER SERIAL NUMBER">
+        <div><label for="serial_dropdown" class="block text-sm font-bold text-gray-700 dark:text-gray-300 uppercase mb-2">SERIAL NUMBER IJP</label> <select id="serial_dropdown" name="serial_dropdown" required class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white uppercase focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"> <option value="">-- SELECT SERIAL NUMBER --</option> </select>
         </div>
-        <div><label for="machine" class="block text-sm font-bold text-gray-700 dark:text-gray-300 uppercase mb-2">MESIN</label> <input type="text" id="machine" name="machine" required class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white uppercase focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" placeholder="ENTER MACHINE NAME">
-        </div>
+        <div><label for="line" class="block text-sm font-bold text-gray-700 dark:text-gray-300 uppercase mb-2">LINE</label> <input type="text" id="line" name="line" readonly class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white uppercase cursor-not-allowed" placeholder="AUTO-FILL FROM SELECTION">
+        </div><input type="hidden" id="machine" name="machine">
         <div><label for="cumulative_op_time" class="block text-sm font-bold text-gray-700 dark:text-gray-300 uppercase mb-2">CUMULATIVE OP TIME (HOURS)</label> <input type="number" id="cumulative_op_time" name="cumulative_op_time" required min="0" class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" placeholder="0">
         </div>
         <div><label for="ijp_condition" class="block text-sm font-bold text-gray-700 dark:text-gray-300 uppercase mb-2">KONDISI IJP</label> <select id="ijp_condition" name="ijp_condition" required class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white uppercase focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"> <option value="">SELECT CONDITION</option> <option value="OK">OK</option> <option value="NOT OK">NOT OK</option> </select>
@@ -382,9 +382,11 @@
 
     // App State
     let allData = []
+    let managementData = []
     let deleteTarget = null
     let chartInstance = null
     let problemChartInstance = null
+    let loadTimeout
 
     // Initialize
     async function init() {
@@ -417,14 +419,14 @@
         if (monitoringError) throw monitoringError
 
         // Load management data
-        const { data: managementData, error: managementError } = await supabase
+        const { data: mgData, error: managementError } = await supabase
           .from('management_data')
           .select('*')
           .order('created_at', { ascending: false })
 
         if (managementError) throw managementError
 
-        console.log('Management data loaded:', managementData)
+        managementData = mgData || []
 
         // Load audit data
         const { data: auditData, error: auditError } = await supabase
@@ -437,10 +439,11 @@
         // Combine all data
         allData = [
           ...monitoringData.map(d => ({ ...d, table_type: 'monitoring' })),
-          ...managementData.map(d => ({ ...d, table_type: 'management' })),
+          ...mgData.map(d => ({ ...d, table_type: 'management' })),
           ...auditData.map(d => ({ ...d, table_type: 'audit' }))
         ]
 
+        updateFormDropdowns()
         updateDashboard()
         updateMonitoringTable()
         updateManagementTable()
@@ -448,33 +451,86 @@
         updateCriticalAlerts()
       } catch (error) {
         console.error('Error loading data:', error)
-        showFormMessage('form-success', 'ERROR LOADING DATA', true)
       }
     }
 
-    // Subscribe to real-time changes
+    // Update form dropdowns
+    function updateFormDropdowns() {
+      const machineDropdown = document.getElementById('machine_dropdown')
+      const serialDropdown = document.getElementById('serial_dropdown')
+
+      // Get unique machines
+      const uniqueMachines = [...new Set(managementData.map(d => d.machine_name))].sort()
+      
+      machineDropdown.innerHTML = '<option value="">-- SELECT MACHINE --</option>'
+      uniqueMachines.forEach(machine => {
+        const option = document.createElement('option')
+        option.value = machine
+        option.textContent = machine
+        machineDropdown.appendChild(option)
+      })
+
+      // Get unique serial numbers
+      const uniqueSerials = [...new Set(managementData.map(d => d.serial_number))].sort()
+      
+      serialDropdown.innerHTML = '<option value="">-- SELECT SERIAL NUMBER --</option>'
+      uniqueSerials.forEach(serial => {
+        const option = document.createElement('option')
+        option.value = serial
+        option.textContent = serial
+        serialDropdown.appendChild(option)
+      })
+    }
+
+    // Handle machine dropdown change
+    document.getElementById('machine_dropdown').addEventListener('change', function() {
+      const selectedMachine = this.value
+      if (selectedMachine) {
+        const machineRecord = managementData.find(d => d.machine_name === selectedMachine)
+        if (machineRecord) {
+          document.getElementById('line').value = machineRecord.line
+          document.getElementById('machine').value = selectedMachine
+        }
+      } else {
+        document.getElementById('line').value = ''
+        document.getElementById('machine').value = ''
+      }
+    })
+
+    // Handle serial dropdown change
+    document.getElementById('serial_dropdown').addEventListener('change', function() {
+      const selectedSerial = this.value
+      if (selectedSerial) {
+        const serialRecord = managementData.find(d => d.serial_number === selectedSerial)
+        if (serialRecord) {
+          document.getElementById('line').value = serialRecord.line
+        }
+      }
+    })
+
+    // Subscribe to real-time changes with debounce
     function subscribeToChanges() {
       supabase
         .channel('monitoring_changes')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'monitoring_data' }, () => {
-          console.log('Monitoring data changed')
-          loadAllData()
+          clearTimeout(loadTimeout)
+          loadTimeout = setTimeout(() => loadAllData(), 500)
         })
         .subscribe()
 
       supabase
         .channel('management_changes')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'management_data' }, () => {
-          console.log('Management data changed')
-          loadAllData()
+          clearTimeout(loadTimeout)
+          loadTimeout = setTimeout(() => loadAllData(), 500)
         })
         .subscribe()
 
       supabase
         .channel('audit_changes')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'audit_logs' }, () => {
-          console.log('Audit data changed')
-          loadAllData()
+          clearTimeout(loadTimeout)
+          loadTimeout = setTimeout(() => loadAllData(), 500)
         })
         .subscribe()
     }
@@ -609,7 +665,6 @@
 
             if (uploadError) {
               console.warn('Photo upload warning:', uploadError)
-              // Continue without photo if upload fails
             } else {
               const { data } = supabase.storage.from('ijp_monitoring').getPublicUrl(filename)
               photoUrl = data.publicUrl
@@ -618,7 +673,7 @@
 
           const formData = {
             line: document.getElementById('line').value.toUpperCase(),
-            serial_number: document.getElementById('serial_number').value.toUpperCase(),
+            serial_number: document.getElementById('serial_dropdown').value.toUpperCase(),
             machine: document.getElementById('machine').value.toUpperCase(),
             cumulative_op_time: parseInt(document.getElementById('cumulative_op_time').value) || 0,
             ijp_condition: document.getElementById('ijp_condition').value.toUpperCase(),
@@ -641,7 +696,7 @@
           document.getElementById('photo-preview').classList.add('hidden')
           document.getElementById('photo-filename').textContent = 'NO FILE SELECTED'
 
-          await logAudit('MONITORING DATA ADDED', `SERIAL: ${formData.serial_number}, OP TIME: ${formData.cumulative_op_time} HRS${photoUrl ? ', PHOTO' : ''}`)
+          await logAudit('MONITORING DATA ADDED', `SERIAL: ${formData.serial_number}, OP TIME: ${formData.cumulative_op_time} HRS`)
         } catch (error) {
           console.error('Error:', error)
           showFormMessage('form-success', `ERROR: ${error.message}`, true)
@@ -671,23 +726,14 @@
         }
 
         try {
-          console.log('Submitting management data:', formData)
-          
-          const { data, error } = await supabase
+          const { error } = await supabase
             .from('management_data')
             .insert([formData])
-            .select()
-
-          console.log('Insert response:', { data, error })
 
           if (error) throw error
 
           document.getElementById('management-form').reset()
           showFormMessage('management-success', '✓ DATA UPLOADED SUCCESSFULLY!')
-          
-          // Force reload data
-          await new Promise(resolve => setTimeout(resolve, 1000))
-          await loadAllData()
           
           await logAudit('IJP REGISTERED', `MACHINE: ${formData.machine_name}`)
         } catch (error) {
@@ -783,14 +829,14 @@
     }
 
     function exportManagementData() {
-      const managementData = allData.filter(d => d.table_type === 'management')
+      const mgData = allData.filter(d => d.table_type === 'management')
       
-      if (managementData.length === 0) {
+      if (mgData.length === 0) {
         showFormMessage('form-success', 'NO MANAGEMENT DATA TO EXPORT', true)
         return
       }
 
-      const wsData = managementData.map(item => ({
+      const wsData = mgData.map(item => ({
         'NAMA MESIN': item.machine_name || '-',
         'LINE': item.line || '-',
         'SERIAL NUMBER IJP': item.serial_number || '-',
@@ -1036,10 +1082,10 @@
     // Update Dashboard
     function updateDashboard() {
       const monitoringData = allData.filter(d => d.table_type === 'monitoring')
-      const managementData = allData.filter(d => d.table_type === 'management')
+      const mgData = allData.filter(d => d.table_type === 'management')
       const problemsCount = monitoringData.filter(d => d.problem_exists === 'ADA').length
       
-      document.getElementById('stat-total').textContent = managementData.length
+      document.getElementById('stat-total').textContent = mgData.length
       document.getElementById('stat-active').textContent = monitoringData.length
       document.getElementById('stat-problems').textContent = problemsCount
       
@@ -1107,8 +1153,6 @@
     function updateManagementTable() {
       const tbody = document.getElementById('management-table')
       const data = allData.filter(d => d.table_type === 'management')
-      
-      console.log('Updating management table with data:', data)
       
       if (data.length === 0) {
         tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400 uppercase">NO IJP DATA REGISTERED</td></tr>'
@@ -1179,5 +1223,5 @@
     // Initialize app
     init()
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9cd2560b2285da7d',t:'MTc3MDk2NDg0NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9cd27b5ab710c51a',t:'MTc3MDk2NjM3My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>

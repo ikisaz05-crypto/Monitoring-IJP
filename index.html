@@ -1,831 +1,472 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Monitoring IJP</title>
-
-  <!-- CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
-    .font-orbitron { font-family: 'Orbitron', monospace; }
-    body { transition: background-color 0.3s; }
-    .page { display: none; }
-    #page-dashboard { display: block; }
-    .hidden { display: none !important; }
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-thumb { background: #10b981; border-radius: 10px; }
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Monitoring IJP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        .font-orbitron { font-family: 'Orbitron', monospace; }
+        .page { display: none; }
+        #page-dashboard { display: block; }
+        .hidden { display: none !important; }
+    </style>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
 
-  <!-- STATUS KONEKSI -->
-  <div id="connection-status" class="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 px-6 py-3 rounded-lg shadow-2xl hidden"></div>
-
-  <!-- LOGIN MODAL -->
-  <div id="login-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm hidden">
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 w-full max-w-md">
-      <h2 class="text-2xl font-orbitron font-bold text-emerald-600 dark:text-emerald-400 text-center mb-4">🔐 MANAGEMENT ACCESS</h2>
-      <input id="login-password" type="password" placeholder="Masukkan Password..." class="w-full px-4 py-3 rounded-xl border mb-3 bg-gray-50 dark:bg-gray-700" />
-      <button id="login-submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition">MASUK</button>
-      <div id="login-error" class="hidden text-center text-red-500 text-sm font-bold mt-2">❌ PASSWORD SALAH!</div>
-    </div>
-  </div>
-
-  <!-- NAVBAR -->
-  <nav class="bg-white dark:bg-gray-800 border-b shadow-sm sticky top-0 z-40">
-    <div class="max-w-7xl mx-auto px-4 flex justify-between items-center h-16">
-      <div class="flex items-center gap-3">
-        <span class="text-2xl font-orbitron font-black text-emerald-600">IJP</span>
-        <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">Monitoring</span>
-      </div>
-      <div class="flex gap-2">
-        <button data-nav="dashboard" class="nav-btn px-4 py-2 rounded-xl text-sm font-bold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700">📊 DASHBOARD</button>
-        <button data-nav="monitoring" class="nav-btn px-4 py-2 rounded-xl text-sm font-bold hover:bg-gray-100 dark:hover:bg-gray-700">📝 MONITORING</button>
-        <button data-nav="management" class="nav-btn px-4 py-2 rounded-xl text-sm font-bold hover:bg-gray-100 dark:hover:bg-gray-700">⚙️ MANAGEMENT</button>
-        <button data-nav="audit" class="nav-btn px-4 py-2 rounded-xl text-sm font-bold hover:bg-gray-100 dark:hover:bg-gray-700">📋 AUDIT</button>
-      </div>
-      <div class="flex items-center gap-3 text-xs">
-        <span id="auth-indicator" class="w-2 h-2 rounded-full bg-red-500"></span>
-        <span id="auth-text" class="font-bold">NOT LOGGED IN</span>
-        <button id="logout-btn" class="hidden px-3 py-1 bg-red-500 text-white rounded-lg">LOGOUT</button>
-        <button id="theme-toggle" class="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-xl">🌓</button>
-      </div>
-    </div>
-  </nav>
-
-  <!-- MAIN -->
-  <div class="max-w-7xl mx-auto px-4 py-6">
-
-    <!-- DASHBOARD -->
-    <div id="page-dashboard" class="page">
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4 border-l-4 border-emerald-500">
-          <div class="text-xs text-gray-400">Total IJP</div>
-          <div id="stat-total" class="text-3xl font-orbitron font-bold">0</div>
+    <!-- NAVBAR -->
+    <nav class="bg-white dark:bg-gray-800 shadow sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 flex justify-between items-center h-16">
+            <span class="text-2xl font-orbitron font-black text-emerald-600">IJP</span>
+            <div class="flex gap-2">
+                <button data-nav="dashboard" class="nav-btn px-4 py-2 rounded-xl text-sm font-bold bg-emerald-100 text-emerald-700">📊 DASHBOARD</button>
+                <button data-nav="monitoring" class="nav-btn px-4 py-2 rounded-xl text-sm font-bold hover:bg-gray-200">📝 MONITORING</button>
+                <button data-nav="management" class="nav-btn px-4 py-2 rounded-xl text-sm font-bold hover:bg-gray-200">⚙️ MANAGEMENT</button>
+                <button data-nav="audit" class="nav-btn px-4 py-2 rounded-xl text-sm font-bold hover:bg-gray-200">📋 AUDIT</button>
+            </div>
+            <div class="flex items-center gap-3">
+                <span id="auth-status" class="text-xs font-bold text-red-500">🔴 NOT LOGGED IN</span>
+                <button id="theme-toggle" class="p-2 rounded-lg hover:bg-gray-200">🌓</button>
+            </div>
         </div>
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4 border-l-4 border-blue-500">
-          <div class="text-xs text-gray-400">Active Monitoring</div>
-          <div id="stat-active" class="text-3xl font-orbitron font-bold">0</div>
-        </div>
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4 border-l-4 border-red-500">
-          <div class="text-xs text-gray-400">Problems</div>
-          <div id="stat-problems" class="text-3xl font-orbitron font-bold">0</div>
-        </div>
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4 border-l-4 border-purple-500">
-          <div class="text-xs text-gray-400">Lines</div>
-          <div id="stat-lines" class="text-3xl font-orbitron font-bold">0</div>
-        </div>
-      </div>
+    </nav>
 
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4 mb-6">
-        <div class="flex justify-between"><span class="text-sm font-bold">Problem Ratio</span><span id="problem-ratio" class="text-sm font-orbitron">⚖️ 0% : 0%</span></div>
-        <div class="w-full h-4 bg-gray-200 rounded-full overflow-hidden"><div id="problem-progress-bar" class="h-full bg-red-500" style="width:0%"></div></div>
-        <div class="flex justify-between text-xs"><span id="problem-count" class="text-red-500 font-bold">0 UNIT</span><span id="normal-count" class="text-emerald-500 font-bold">0 UNIT</span></div>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4"><h3 class="font-bold mb-2 text-sm">OP Time per Machine</h3><div style="height:220px"><canvas id="monitoring-chart"></canvas></div></div>
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4"><h3 class="font-bold mb-2 text-sm">Problem / Normal</h3><div style="height:220px"><canvas id="problem-chart"></canvas></div></div>
-      </div>
-
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4 mb-6"><h3 class="font-bold text-sm mb-3">🚨 Critical Alerts</h3><div id="critical-alerts"></div></div>
-
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4">
-        <div class="flex flex-wrap items-center gap-4 mb-4">
-          <h3 class="font-bold text-sm">📅 Weekly Analysis</h3>
-          <select id="week_selector" class="px-3 py-1 rounded-lg border bg-gray-50 dark:bg-gray-700 text-sm"></select>
-          <div class="flex gap-4 text-xs ml-auto"><span>Total OP: <strong id="weekly-total" class="font-orbitron">0</strong></span><span>Entries: <strong id="weekly-entries">0</strong></span><span>Avg: <strong id="weekly-avg" class="font-orbitron">0</strong></span></div>
+    <!-- LOGIN MODAL -->
+    <div id="login-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center hidden z-50">
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-2xl w-96">
+            <h2 class="text-xl font-bold text-center mb-4">🔐 LOGIN</h2>
+            <input id="login-password" type="password" placeholder="Password" class="w-full px-4 py-2 rounded-lg border mb-3" />
+            <button id="login-btn" class="w-full py-2 bg-emerald-600 text-white rounded-lg font-bold">MASUK</button>
+            <p id="login-error" class="text-red-500 text-sm text-center mt-2 hidden">❌ PASSWORD SALAH!</p>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div style="height:180px"><canvas id="weekly-trend-chart"></canvas></div>
-          <div style="height:180px"><canvas id="machine-comparison-chart"></canvas></div>
-        </div>
-        <div class="overflow-x-auto mt-4 max-h-48 overflow-y-auto">
-          <table class="w-full text-xs"><thead class="bg-gray-100 dark:bg-gray-700 sticky top-0"><tr><th>Date</th><th>Line</th><th>Serial</th><th>OP</th><th>Inc</th><th>Kondisi</th></tr></thead><tbody id="weekly-table"></tbody></table>
-        </div>
-      </div>
     </div>
 
-    <!-- MONITORING -->
-    <div id="page-monitoring" class="page hidden">
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4 mb-6">
-        <h2 class="text-xl font-orbitron font-bold text-emerald-600 mb-4">📝 INPUT MONITORING</h2>
-        <form id="monitoring-form" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div><label class="block text-xs font-bold uppercase">Line</label><input id="line" type="text" placeholder="LINE 1" class="w-full px-3 py-2 rounded-lg border bg-gray-50 dark:bg-gray-700" required /></div>
-          <div><label class="block text-xs font-bold uppercase">Serial</label><select id="serial_dropdown" class="w-full px-3 py-2 rounded-lg border bg-gray-50 dark:bg-gray-700"><option value="">-- SELECT --</option></select></div>
-          <div><label class="block text-xs font-bold uppercase">Machine</label><select id="machine_dropdown" class="w-full px-3 py-2 rounded-lg border bg-gray-50 dark:bg-gray-700"><option value="">-- SELECT --</option></select><input id="machine" type="hidden" /></div>
-          <div><label class="block text-xs font-bold uppercase">Date</label><input id="monitoring_date" type="date" class="w-full px-3 py-2 rounded-lg border bg-gray-50 dark:bg-gray-700" required /></div>
-          <div><label class="block text-xs font-bold uppercase">OP Time (HRS)</label><input id="cumulative_op_time" type="number" step="0.5" class="w-full px-3 py-2 rounded-lg border bg-gray-50 dark:bg-gray-700" required /></div>
-          <div><label class="block text-xs font-bold uppercase">Condition</label><select id="ijp_condition" class="w-full px-3 py-2 rounded-lg border bg-gray-50 dark:bg-gray-700"><option value="OK">OK</option><option value="NG">NG</option></select></div>
-          <div><label class="block text-xs font-bold uppercase">Problem</label><select id="problem_exists" class="w-full px-3 py-2 rounded-lg border bg-gray-50 dark:bg-gray-700"><option value="TIDAK ADA">TIDAK ADA</option><option value="ADA">ADA</option></select></div>
-          <div id="problem-section" class="hidden md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div><label class="block text-xs font-bold uppercase">Description</label><input id="problem_description" type="text" class="w-full px-3 py-2 rounded-lg border bg-gray-50 dark:bg-gray-700" /></div>
-            <div><label class="block text-xs font-bold uppercase">Action</label><input id="problem_action" type="text" class="w-full px-3 py-2 rounded-lg border bg-gray-50 dark:bg-gray-700" /></div>
-            <div><label class="block text-xs font-bold uppercase">Photo</label><input id="photo_upload" type="file" accept="image/*" class="w-full px-3 py-2 rounded-lg border bg-gray-50 dark:bg-gray-700" /></div>
-          </div>
-          <div><label class="block text-xs font-bold uppercase">Notes</label><input id="notes" type="text" class="w-full px-3 py-2 rounded-lg border bg-gray-50 dark:bg-gray-700" /></div>
-          <div class="flex items-center gap-3"><label><input id="filter_replaced" type="checkbox" /> Filter Replaced?</label></div>
-          <div class="md:col-span-3 flex gap-3"><button type="submit" class="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg">💾 SIMPAN</button><button type="reset" class="px-6 py-2 bg-gray-500 text-white font-bold rounded-lg">↺ RESET</button></div>
-        </form>
-        <div id="form-success" class="hidden mt-3 p-3 bg-emerald-100 rounded-lg text-center"></div>
-      </div>
+    <!-- MAIN CONTENT -->
+    <div class="max-w-7xl mx-auto px-4 py-6">
 
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4">
-        <div class="flex flex-wrap items-center gap-3 mb-4">
-          <h3 class="font-bold text-sm">📋 Monitoring Data</h3>
-          <select id="line-filter" class="px-3 py-1 rounded-lg border bg-gray-50 dark:bg-gray-700 text-sm"><option value="ALL">SEMUA LINE</option></select>
-          <select id="status-filter" class="px-3 py-1 rounded-lg border bg-gray-50 dark:bg-gray-700 text-sm"><option value="ALL">SEMUA STATUS</option><option value="NORMAL">NORMAL</option><option value="WARNING">WARNING</option><option value="CRITICAL">CRITICAL</option></select>
-          <button id="reset-filters" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded-lg text-xs font-bold">↺ RESET</button>
-          <span id="filtered-count" class="text-xs text-gray-400 ml-auto">0/0</span>
-          <button id="export-monitoring" class="px-3 py-1 bg-emerald-600 text-white rounded-lg text-xs font-bold">📥 EXPORT</button>
+        <!-- DASHBOARD -->
+        <div id="page-dashboard" class="page">
+            <div class="grid grid-cols-4 gap-4 mb-6">
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow border-l-4 border-emerald-500">
+                    <p class="text-xs text-gray-400">TOTAL IJP</p>
+                    <p id="stat-total" class="text-3xl font-orbitron font-bold">0</p>
+                </div>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow border-l-4 border-blue-500">
+                    <p class="text-xs text-gray-400">MONITORING</p>
+                    <p id="stat-active" class="text-3xl font-orbitron font-bold">0</p>
+                </div>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow border-l-4 border-red-500">
+                    <p class="text-xs text-gray-400">PROBLEMS</p>
+                    <p id="stat-problems" class="text-3xl font-orbitron font-bold">0</p>
+                </div>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow border-l-4 border-purple-500">
+                    <p class="text-xs text-gray-400">LINES</p>
+                    <p id="stat-lines" class="text-3xl font-orbitron font-bold">0</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-6 mb-6">
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow">
+                    <h3 class="font-bold text-sm mb-2">📊 OP Time per Machine</h3>
+                    <div style="height:250px"><canvas id="chart-machine"></canvas></div>
+                </div>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow">
+                    <h3 class="font-bold text-sm mb-2">📊 Problem / Normal</h3>
+                    <div style="height:250px"><canvas id="chart-problem"></canvas></div>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow mb-6">
+                <h3 class="font-bold text-sm mb-3">🚨 CRITICAL ALERTS</h3>
+                <div id="critical-alerts"></div>
+            </div>
         </div>
-        <div class="overflow-x-auto max-h-96 overflow-y-auto">
-          <table class="w-full text-sm"><thead class="bg-gray-100 dark:bg-gray-700 sticky top-0"><tr><th>LINE</th><th>SERIAL</th><th>MACHINE</th><th>OP</th><th>KONDISI</th><th>PROBLEM</th><th>STATUS</th></tr></thead><tbody id="monitoring-table"></tbody></table>
+
+        <!-- MONITORING -->
+        <div id="page-monitoring" class="page hidden">
+            <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow mb-6">
+                <h2 class="text-xl font-orbitron font-bold text-emerald-600 mb-4">📝 INPUT MONITORING</h2>
+                <form id="form-monitoring" class="grid grid-cols-3 gap-4">
+                    <input id="input-line" placeholder="LINE" class="px-3 py-2 rounded-lg border" required />
+                    <input id="input-serial" placeholder="SERIAL" class="px-3 py-2 rounded-lg border" required />
+                    <input id="input-machine" placeholder="MACHINE" class="px-3 py-2 rounded-lg border" required />
+                    <input id="input-date" type="date" class="px-3 py-2 rounded-lg border" required />
+                    <input id="input-op" type="number" placeholder="OP TIME" class="px-3 py-2 rounded-lg border" required />
+                    <select id="input-condition" class="px-3 py-2 rounded-lg border">
+                        <option value="OK">OK</option>
+                        <option value="NG">NG</option>
+                    </select>
+                    <select id="input-problem" class="px-3 py-2 rounded-lg border">
+                        <option value="TIDAK ADA">TIDAK ADA</option>
+                        <option value="ADA">ADA</option>
+                    </select>
+                    <input id="input-notes" placeholder="NOTES" class="px-3 py-2 rounded-lg border" />
+                    <div class="flex items-center gap-2">
+                        <input id="input-filter" type="checkbox" /> Filter Replaced?
+                    </div>
+                    <button type="submit" class="col-span-3 py-2 bg-emerald-600 text-white rounded-lg font-bold">💾 SIMPAN</button>
+                </form>
+                <div id="form-success" class="hidden mt-3 p-2 bg-emerald-100 text-emerald-700 rounded-lg text-center"></div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-sm">📋 DATA MONITORING</h3>
+                    <button id="export-monitoring" class="px-3 py-1 bg-emerald-600 text-white rounded-lg text-xs">📥 EXPORT</button>
+                </div>
+                <div class="overflow-auto max-h-96">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-100 dark:bg-gray-700 sticky top-0">
+                            <tr><th class="p-2 text-left">LINE</th><th class="p-2 text-left">SERIAL</th><th class="p-2 text-left">MACHINE</th><th class="p-2 text-left">OP</th><th class="p-2 text-left">STATUS</th></tr>
+                        </thead>
+                        <tbody id="table-monitoring"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
-      </div>
+
+        <!-- MANAGEMENT -->
+        <div id="page-management" class="page hidden">
+            <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow mb-6">
+                <h2 class="text-xl font-orbitron font-bold text-emerald-600 mb-4">⚙️ REGISTER IJP</h2>
+                <form id="form-management" class="grid grid-cols-3 gap-4">
+                    <input id="mg-machine" placeholder="MACHINE NAME" class="px-3 py-2 rounded-lg border" required />
+                    <input id="mg-line" placeholder="LINE" class="px-3 py-2 rounded-lg border" required />
+                    <input id="mg-serial" placeholder="SERIAL NUMBER" class="px-3 py-2 rounded-lg border" required />
+                    <button type="submit" class="col-span-3 py-2 bg-emerald-600 text-white rounded-lg font-bold">💾 REGISTER</button>
+                </form>
+                <div id="mg-success" class="hidden mt-3 p-2 bg-emerald-100 text-emerald-700 rounded-lg text-center"></div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-sm">📋 REGISTERED IJP</h3>
+                    <button id="export-management" class="px-3 py-1 bg-emerald-600 text-white rounded-lg text-xs">📥 EXPORT</button>
+                </div>
+                <div class="overflow-auto max-h-96">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-100 dark:bg-gray-700 sticky top-0">
+                            <tr><th class="p-2 text-left">MACHINE</th><th class="p-2 text-left">LINE</th><th class="p-2 text-left">SERIAL</th><th class="p-2 text-left">ACTION</th></tr>
+                        </thead>
+                        <tbody id="table-management"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- AUDIT -->
+        <div id="page-audit" class="page hidden">
+            <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-sm">📋 AUDIT LOGS</h3>
+                    <button id="export-audit" class="px-3 py-1 bg-emerald-600 text-white rounded-lg text-xs">📥 EXPORT</button>
+                </div>
+                <div class="overflow-auto max-h-96">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-100 dark:bg-gray-700 sticky top-0">
+                            <tr><th class="p-2 text-left">TIME</th><th class="p-2 text-left">ACTION</th><th class="p-2 text-left">DETAIL</th></tr>
+                        </thead>
+                        <tbody id="table-audit"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
     </div>
 
-    <!-- MANAGEMENT -->
-    <div id="page-management" class="page hidden">
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4 mb-6">
-        <h2 class="text-xl font-orbitron font-bold text-emerald-600 mb-4">⚙️ REGISTER IJP</h2>
-        <form id="management-form" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div><label class="block text-xs font-bold uppercase">Machine</label><input id="machine_name" type="text" class="w-full px-3 py-2 rounded-lg border bg-gray-50 dark:bg-gray-700" required /></div>
-          <div><label class="block text-xs font-bold uppercase">Line</label><input id="line_mg" type="text" class="w-full px-3 py-2 rounded-lg border bg-gray-50 dark:bg-gray-700" required /></div>
-          <div><label class="block text-xs font-bold uppercase">Serial</label><input id="service" type="text" class="w-full px-3 py-2 rounded-lg border bg-gray-50 dark:bg-gray-700" required /></div>
-          <div class="md:col-span-3"><button type="submit" class="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg">💾 REGISTER</button></div>
-        </form>
-        <div id="management-success" class="hidden mt-3 p-3 bg-emerald-100 rounded-lg text-center"></div>
-      </div>
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4">
-        <div class="flex justify-between mb-4">
-          <h3 class="font-bold text-sm">📋 Registered IJP</h3>
-          <button id="export-management" class="px-3 py-1 bg-emerald-600 text-white rounded-lg text-xs font-bold">📥 EXPORT</button>
-        </div>
-        <div class="overflow-x-auto max-h-96 overflow-y-auto">
-          <table class="w-full text-sm">
-            <thead class="bg-gray-100 dark:bg-gray-700 sticky top-0">
-              <tr><th>MACHINE</th><th>LINE</th><th>SERIAL</th><th>ACTION</th></tr>
-            </thead>
-            <tbody id="management-table"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+    <!-- ============ JAVASCRIPT ============ -->
+    <script>
+        // ===== KONFIGURASI =====
+        const SUPABASE_URL = 'https://okdvksrprvhgqdyioryf.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rZHZrc3JwcnZoZ3FkeWlvcnlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5Mjc5OTYsImV4cCI6MjA4NjUwMzk5Nn0.cfrGXxCgbPWpEdhBGC6RP8JonSTCjN1d6IOr4qyXSQw';
+        const PASSWORD = 'Dankos2026';
 
-    <!-- AUDIT -->
-    <div id="page-audit" class="page hidden">
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4">
-        <div class="flex justify-between mb-4">
-          <h3 class="font-bold text-sm">📋 Audit Logs <span id="audit-count" class="text-xs text-gray-400">0 RECORDS</span></h3>
-          <button id="export-audit" class="px-3 py-1 bg-emerald-600 text-white rounded-lg text-xs font-bold">📥 EXPORT</button>
-        </div>
-        <div class="overflow-x-auto max-h-96 overflow-y-auto">
-          <table class="w-full text-sm">
-            <thead class="bg-gray-100 dark:bg-gray-700 sticky top-0">
-              <tr><th>TIMESTAMP</th><th>ACTION</th><th>DETAILS</th></tr>
-            </thead>
-            <tbody id="audit-table"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+        let supabase = null;
+        let allData = [];
+        let mgmtData = [];
+        let isAuth = false;
+        let chart1 = null;
+        let chart2 = null;
 
-  </div>
-
-  <!-- ========== JAVASCRIPT LENGKAP ========== -->
-  <script>
-    (function(){
-      const SUPABASE_URL = 'https://okdvksrprvhgqdyioryf.supabase.co';
-      const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rZHZrc3JwcnZoZ3FkeWlvcnlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5Mjc5OTYsImV4cCI6MjA4NjUwMzk5Nn0.cfrGXxCgbPWpEdhBGC6RP8JonSTCjN1d6IOr4qyXSQw';
-
-      let supabase = null;
-      let allData = [];
-      let managementData = [];
-      let isAuth = false;
-      const PASS = 'Dankos2026';
-      let chartInst = null, problemChart = null, weeklyTrend = null, machineComp = null;
-      let currentLineFilter = 'ALL', currentStatusFilter = 'ALL';
-      let retryCount = 0;
-      const MAX_RETRY = 3;
-
-      // ===== INIT =====
-      async function initSupabase() {
-        try {
-          if (!window.supabase) throw new Error('Supabase library not loaded');
-          supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-          const { error } = await supabase.from('monitoring_data').select('count', { count: 'exact', head: true });
-          if (error) throw error;
-          console.log('✅ Supabase connected');
-          showConnStatus(true);
-          return true;
-        } catch (err) {
-          console.error('❌ Connection failed:', err);
-          showConnStatus(false, err.message);
-          return false;
-        }
-      }
-
-      function showConnStatus(ok, msg = '') {
-        const div = document.getElementById('connection-status');
-        if (!div) return;
-        div.classList.remove('hidden');
-        div.className = ok 
-          ? 'fixed top-20 left-1/2 transform -translate-x-1/2 z-50 px-6 py-3 rounded-lg shadow-2xl border-l-4 border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30'
-          : 'fixed top-20 left-1/2 transform -translate-x-1/2 z-50 px-6 py-4 rounded-lg shadow-2xl border-l-4 border-red-500 bg-red-50 dark:bg-red-900/30';
-        div.innerHTML = ok 
-          ? '<div class="flex items-center gap-3"><span>✅</span><p class="text-sm font-bold uppercase">TERKONEKSI DATABASE</p></div>'
-          : `<div><span>🔴 GAGAL KONEKSI</span><p class="text-xs">${msg}</p><button onclick="location.reload()" class="mt-2 px-4 py-1 bg-red-500 text-white rounded">COBA LAGI</button></div>`;
-        if (ok) setTimeout(() => div.classList.add('hidden'), 3000);
-      }
-
-      // ===== LOAD DATA =====
-      async function loadAll() {
-        if (!supabase) return;
-        try {
-          console.log('Loading data...');
-          const { data: mon, error: e1 } = await supabase.from('monitoring_data').select('*').order('monitoring_date', { ascending: false });
-          if (e1) throw e1;
-          
-          const { data: mg, error: e2 } = await supabase.from('management_data').select('*').order('created_at', { ascending: false });
-          if (e2) throw e2;
-          
-          const { data: aud, error: e3 } = await supabase.from('audit_logs').select('*').order('created_at', { ascending: false });
-          if (e3) throw e3;
-
-          allData = [
-            ...(mon || []).map(d => ({ ...d, table_type: 'monitoring' })),
-            ...(mg || []).map(d => ({ ...d, table_type: 'management' })),
-            ...(aud || []).map(d => ({ ...d, table_type: 'audit' }))
-          ];
-          managementData = mg || [];
-
-          console.log('✅ Data loaded:', allData.length, 'records');
-          console.log('📊 Monitoring:', mon?.length || 0);
-          console.log('📊 Management:', mg?.length || 0);
-          console.log('📊 Audit:', aud?.length || 0);
-          
-          renderAll();
-          retryCount = 0;
-        } catch (err) {
-          console.error('Load error:', err);
-          if (retryCount < MAX_RETRY) {
-            retryCount++;
-            setTimeout(loadAll, 2000);
-          }
-        }
-      }
-
-      function getStatus(op) {
-        if (op >= 15000) return 'CRITICAL';
-        if (op >= 10000) return 'WARNING';
-        return 'NORMAL';
-      }
-
-      // ===== RENDER =====
-      function renderAll() {
-        console.log('🔄 Rendering UI...');
-        updateDashboardUI();
-        updateFormDropdowns();
-        updateLineFilter();
-        updateMonitoringTable();
-        if (isAuth) { updateMgmtTable(); updateAuditTable(); }
-        updateCriticalAlerts();
-        populateWeekSelector();
-        console.log('✅ UI rendered');
-      }
-
-      function updateDashboardUI() {
-        const mon = allData.filter(d => d.table_type === 'monitoring');
-        const mgmt = allData.filter(d => d.table_type === 'management');
-        const problems = mon.filter(d => d.problem_exists === 'ADA').length;
-        const normal = mon.filter(d => d.problem_exists === 'TIDAK ADA').length;
-        const total = problems + normal;
-
-        const el = id => document.getElementById(id);
-        if (el('stat-total')) el('stat-total').innerText = mgmt.length;
-        if (el('stat-active')) el('stat-active').innerText = mon.length;
-        if (el('stat-problems')) el('stat-problems').innerText = problems;
-        const lines = new Set(mon.map(d => d.line));
-        if (el('stat-lines')) el('stat-lines').innerText = lines.size;
-
-        let pct = total ? ((problems / total) * 100).toFixed(1) : 0;
-        let nPct = total ? ((normal / total) * 100).toFixed(1) : 0;
-        if (el('problem-count')) el('problem-count').innerText = `${problems} UNIT`;
-        if (el('normal-count')) el('normal-count').innerText = `${normal} UNIT`;
-        if (el('problem-progress-bar')) el('problem-progress-bar').style.width = total ? (problems / total) * 100 + '%' : '0%';
-        if (el('problem-ratio')) {
-          el('problem-ratio').innerHTML = `⚖️ PROBLEM RATIO: <span class="text-red-500">${pct}%</span> : <span class="text-emerald-500">${nPct}%</span>`;
-        }
-
-        // Charts
-        const ctx = document.getElementById('monitoring-chart')?.getContext('2d');
-        if (ctx && mon.length) {
-          let machines = mon.map(m => ({ machine: m.machine || 'UNKNOWN', op: m.cumulative_op_time || 0 })).sort((a, b) => a.op - b.op);
-          if (chartInst) chartInst.destroy();
-          chartInst = new Chart(ctx, {
-            type: 'bar',
-            data: {
-              labels: machines.map(m => m.machine),
-              datasets: [{ label: 'OP TIME (HRS)', data: machines.map(m => m.op), backgroundColor: machines.map(m => m.op >= 15000 ? '#ef4444' : m.op >= 10000 ? '#f59e0b' : '#10b981') }]
-            },
-            options: { responsive: true, maintainAspectRatio: false }
-          });
-        }
-
-        const probCtx = document.getElementById('problem-chart')?.getContext('2d');
-        if (probCtx) {
-          if (problemChart) problemChart.destroy();
-          problemChart = new Chart(probCtx, {
-            type: 'doughnut',
-            data: { labels: [`PROBLEM (${problems}|${pct}%)`, `NORMAL (${normal}|${nPct}%)`], datasets: [{ data: [problems, normal], backgroundColor: ['#ef4444', '#10b981'] }] },
-            options: { cutout: '65%', responsive: true }
-          });
-        }
-      }
-
-      function updateMonitoringTable() {
-        let data = allData.filter(d => d.table_type === 'monitoring');
-        if (currentLineFilter !== 'ALL') data = data.filter(d => d.line === currentLineFilter);
-        if (currentStatusFilter !== 'ALL') data = data.filter(d => getStatus(d.cumulative_op_time || 0) === currentStatusFilter);
-
-        const filteredCount = document.getElementById('filtered-count');
-        if (filteredCount) {
-          const totalData = allData.filter(d => d.table_type === 'monitoring').length;
-          filteredCount.textContent = `${data.length}/${totalData}`;
-        }
-        
-        const tbody = document.getElementById('monitoring-table');
-        if (!tbody) return;
-        if (!data.length) { tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center">TIDAK ADA DATA</td></tr>'; return; }
-
-        tbody.innerHTML = data.slice(0, 20).map(item => {
-          let op = item.cumulative_op_time || 0, st = getStatus(op);
-          let stClass = st === 'CRITICAL' ? 'bg-red-100 text-red-700' : st === 'WARNING' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700';
-          return `<tr class="border-b"><td class="p-2 font-bold">${item.line || '-'}</td><td class="p-2">${item.serial_number || '-'}</td><td class="p-2">${item.machine || '-'}</td><td class="p-2 font-orbitron font-bold">${op} HRS</td><td class="p-2"><span class="px-2 py-1 rounded-full text-xs ${item.ijp_condition === 'OK' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}">${item.ijp_condition || '-'}</span></td><td class="p-2"><span class="px-2 py-1 rounded-full text-xs ${item.problem_exists === 'ADA' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}">${item.problem_exists || '-'}</span></td><td class="p-2"><span class="px-2 py-1 rounded-full text-xs ${stClass}">${st}</span></td></tr>`;
-        }).join('');
-      }
-
-      function updateLineFilter() {
-        const lines = [...new Set(allData.filter(d => d.table_type === 'monitoring').map(d => d.line).filter(Boolean))];
-        const sel = document.getElementById('line-filter');
-        if (sel) sel.innerHTML = '<option value="ALL">SEMUA LINE</option>' + lines.map(l => `<option value="${l}">${l}</option>`).join('');
-      }
-
-      function updateFormDropdowns() {
-        const machines = [...new Set(managementData.map(d => d.machine_name))];
-        const sel = document.getElementById('machine_dropdown');
-        if (sel) sel.innerHTML = '<option value="">-- SELECT MACHINE --</option>' + machines.map(m => `<option value="${m}">${m}</option>`).join('');
-      }
-
-      function populateWeekSelector() {
-        const weeks = new Set();
-        allData.filter(d => d.table_type === 'monitoring').forEach(d => {
-          if (d.monitoring_date) {
-            const dte = new Date(d.monitoring_date);
-            const week = Math.ceil((((dte - dte.getDay()) - new Date(dte.getFullYear(), 0, 1)) / 86400000 + 1) / 7);
-            weeks.add(`${dte.getFullYear()}-W${String(week).padStart(2, '0')}`);
-          }
-        });
-        const sorted = Array.from(weeks).sort().reverse();
-        const sel = document.getElementById('week_selector');
-        if (sel) {
-          sel.innerHTML = '<option value="">-- SELECT WEEK --</option>' + sorted.map(w => `<option value="${w}">WEEK ${w}</option>`).join('');
-          if (sorted.length) updateWeeklyAnalysis(sorted[0]);
-          sel.onchange = e => updateWeeklyAnalysis(e.target.value);
-        }
-      }
-
-      function updateWeeklyAnalysis(weekStr) {
-        if (!weekStr) return;
-        const [year, week] = weekStr.split('-W');
-        const weekNum = parseInt(week);
-        const data = allData.filter(d => d.table_type === 'monitoring' && d.monitoring_date &&
-          new Date(d.monitoring_date).getFullYear() == parseInt(year) &&
-          Math.ceil((((new Date(d.monitoring_date) - new Date(d.monitoring_date).getDay()) - new Date(year, 0, 1)) / 86400000 + 1) / 7) === weekNum
-        );
-        const total = data.reduce((s, d) => s + (d.cumulative_op_time || 0), 0);
-        document.getElementById('weekly-total').innerText = total;
-        document.getElementById('weekly-entries').innerText = data.length;
-        document.getElementById('weekly-avg').innerText = data.length ? Math.round(total / data.length) : 0;
-
-        if (weeklyTrend) weeklyTrend.destroy();
-        const sorted = data.sort((a, b) => new Date(a.monitoring_date) - new Date(b.monitoring_date));
-        const trendCtx = document.getElementById('weekly-trend-chart')?.getContext('2d');
-        if (trendCtx) {
-          weeklyTrend = new Chart(trendCtx, {
-            type: 'line',
-            data: {
-              labels: sorted.map(d => new Date(d.monitoring_date).toLocaleDateString()),
-              datasets: [{ label: 'OP TIME (HRS)', data: sorted.map(d => d.cumulative_op_time), borderColor: '#10b981', fill: true }]
+        // ===== INIT SUPABASE =====
+        async function initDB() {
+            try {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                const { error } = await supabase.from('monitoring_data').select('count', { count: 'exact', head: true });
+                if (error) throw error;
+                console.log('✅ DB Connected');
+                return true;
+            } catch (e) {
+                console.error('❌ DB Error:', e);
+                return false;
             }
-          });
         }
 
-        const machMap = {};
-        data.forEach(d => { const m = d.machine || 'UNKNOWN'; machMap[m] = (machMap[m] || 0) + (d.cumulative_op_time || 0); });
-        if (machineComp) machineComp.destroy();
-        const compCtx = document.getElementById('machine-comparison-chart')?.getContext('2d');
-        if (compCtx) {
-          machineComp = new Chart(compCtx, {
-            type: 'bar',
-            data: { labels: Object.keys(machMap), datasets: [{ label: 'TOTAL OP TIME', data: Object.values(machMap), backgroundColor: '#06b6d4' }] }
-          });
-        }
+        // ===== LOAD DATA =====
+        async function loadData() {
+            if (!supabase) return;
+            try {
+                const { data: mon } = await supabase.from('monitoring_data').select('*').order('monitoring_date', { ascending: false });
+                const { data: mg } = await supabase.from('management_data').select('*').order('created_at', { ascending: false });
+                const { data: aud } = await supabase.from('audit_logs').select('*').order('created_at', { ascending: false });
 
-        const weekTable = document.getElementById('weekly-table');
-        if (weekTable) {
-          weekTable.innerHTML = data.map((item, idx) => {
-            let inc = 0;
-            if (idx > 0 && sorted[idx - 1].serial_number === item.serial_number) inc = Math.max(0, (item.cumulative_op_time || 0) - (sorted[idx - 1].cumulative_op_time || 0));
-            return `<tr><td class="p-2">${new Date(item.monitoring_date).toLocaleDateString()}</td><td class="p-2">${item.line}</td><td class="p-2">${item.serial_number}</td><td class="p-2 font-orbitron">${item.cumulative_op_time || 0}</td><td class="p-2 text-cyan-600 font-bold">${inc}</td><td class="p-2">${item.ijp_condition}</td></tr>`;
-          }).join('');
-        }
-      }
+                allData = [
+                    ...(mon || []).map(d => ({ ...d, type: 'monitoring' })),
+                    ...(mg || []).map(d => ({ ...d, type: 'management' })),
+                    ...(aud || []).map(d => ({ ...d, type: 'audit' }))
+                ];
+                mgmtData = mg || [];
 
-      function updateCriticalAlerts() {
-        const mon = allData.filter(d => d.table_type === 'monitoring');
-        const critical = mon.filter(d => (d.cumulative_op_time || 0) >= 15000);
-        const warning = mon.filter(d => (d.cumulative_op_time || 0) >= 10000 && (d.cumulative_op_time || 0) < 15000);
-        let html = '';
-        critical.forEach(c => { html += `<div class="bg-red-50 dark:bg-red-900/20 border-2 border-red-500 rounded-xl p-4 mb-4"><div class="flex gap-3"><span class="text-3xl">🚨</span><div><h3 class="font-orbitron font-bold text-red-700">CRITICAL</h3><p>LINE: ${c.line} | SERIAL: ${c.serial_number} | OP: ${c.cumulative_op_time} HRS</p></div></div></div>`; });
-        warning.forEach(w => { html += `<div class="bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-500 rounded-xl p-4 mb-4"><div class="flex gap-3"><span class="text-3xl">⚠️</span><div><h3 class="font-orbitron font-bold text-amber-700">WARNING</h3><p>LINE: ${w.line} | OP: ${w.cumulative_op_time} HRS</p></div></div></div>`; });
-        document.getElementById('critical-alerts').innerHTML = html;
-      }
-
-      function updateMgmtTable() {
-        const mg = allData.filter(d => d.table_type === 'management');
-        const tbody = document.getElementById('management-table');
-        if (!tbody) return;
-        if (!mg.length) { tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center">NO DATA</td></tr>'; return; }
-        tbody.innerHTML = mg.map(m => `<tr><td class="p-2 font-semibold">${m.machine_name}</td><td class="p-2">${m.line}</td><td class="p-2"><input type="text" data-id="${m.id}" data-original="${m.serial_number}" value="${m.serial_number}" class="border rounded px-2 py-1 text-sm w-full"><button onclick="window.saveSerial('${m.id}',this)" class="bg-green-500 text-white px-2 py-1 rounded text-xs">✓</button></td><td class="p-2"><button onclick="window.delRecord({id:'${m.id}'})" class="text-red-500 font-bold">DELETE</button></td></tr>`).join('');
-      }
-
-      window.saveSerial = async (id, btn) => {
-        if (!isAuth) { alert('Login required'); return; }
-        if (!supabase) { alert('DB not connected'); return; }
-        const input = document.querySelector(`input[data-id="${id}"]`);
-        if (!input) return;
-        const newVal = input.value.toUpperCase();
-        const oldVal = input.dataset.original;
-        if (!newVal || newVal === oldVal) return;
-        btn.disabled = true;
-        btn.textContent = '...';
-        try {
-          await supabase.from('management_data').update({ serial_number: newVal }).eq('id', id);
-          await logAudit('SERIAL UPDATED', `ID:${id} NEW:${newVal}`);
-          alert('✓ Updated!');
-          loadAll();
-        } catch (err) { alert('Error: ' + err.message); input.value = oldVal; } finally { btn.disabled = false; btn.textContent = '✓'; }
-      };
-
-      window.delRecord = async (rec) => {
-        if (!isAuth) { alert('Login required'); return; }
-        if (!supabase) { alert('DB not connected'); return; }
-        if (!confirm('DELETE?')) return;
-        try {
-          await supabase.from('management_data').delete().eq('id', rec.id);
-          await logAudit('DELETED', `ID:${rec.id}`);
-          loadAll();
-          alert('✓ Deleted');
-        } catch (err) { alert('Error: ' + err.message); }
-      };
-
-      function updateAuditTable() {
-        const aud = allData.filter(d => d.table_type === 'audit');
-        document.getElementById('audit-count').textContent = `${aud.length} RECORDS`;
-        const tbody = document.getElementById('audit-table');
-        if (!tbody) return;
-        if (!aud.length) { tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center">NO ACTIVITY</td></tr>'; return; }
-        tbody.innerHTML = aud.map(a => `<tr><td class="p-2 text-xs font-mono">${new Date(a.created_at).toLocaleString()}</td><td class="p-2"><span class="px-2 py-1 bg-cyan-100 rounded text-xs font-bold">${a.user_action}</span></td><td class="p-2">${a.activity}</td></tr>`).join('');
-      }
-
-      async function logAudit(action, details) {
-        if (supabase) await supabase.from('audit_logs').insert([{ user_action: action, activity: details }]);
-      }
-
-      // ===== EVENTS =====
-      function setupEvents() {
-        const el = id => document.getElementById(id);
-
-        // Login
-        const loginBtn = el('login-submit');
-        if (loginBtn) {
-          loginBtn.onclick = () => {
-            const pwd = el('login-password');
-            if (pwd && pwd.value === PASS) {
-              isAuth = true;
-              sessionStorage.setItem('ijp_auth', 'true');
-              const modal = el('login-modal');
-              if (modal) modal.classList.add('hidden');
-              updateAuthUI();
-              loadAll();
-            } else {
-              const err = el('login-error');
-              if (err) {
-                err.classList.remove('hidden');
-                setTimeout(() => err.classList.add('hidden'), 2000);
-              }
+                console.log('✅ Loaded:', allData.length, 'records');
+                renderAll();
+            } catch (e) {
+                console.error('Load error:', e);
             }
-          };
         }
 
-        // Logout
-        const logoutBtn = el('logout-btn');
-        if (logoutBtn) {
-          logoutBtn.onclick = () => {
-            isAuth = false;
-            sessionStorage.removeItem('ijp_auth');
-            updateAuthUI();
-            showPage('dashboard');
-            logAudit('LOGOUT', 'Manual');
-          };
+        // ===== RENDER =====
+        function renderAll() {
+            renderDashboard();
+            renderMonitoring();
+            renderManagement();
+            renderAudit();
+            renderAlerts();
         }
 
-        // Theme Toggle - FIXED
-        const themeBtn = el('theme-toggle');
-        if (themeBtn) {
-          themeBtn.onclick = () => {
-            document.documentElement.classList.toggle('dark');
-            console.log('Dark mode toggled');
-          };
-        }
+        function renderDashboard() {
+            const mon = allData.filter(d => d.type === 'monitoring');
+            const mg = allData.filter(d => d.type === 'management');
+            const problems = mon.filter(d => d.problem_exists === 'ADA').length;
+            const lines = new Set(mon.map(d => d.line));
 
-        // Navigation
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-          btn.onclick = () => {
-            const pg = btn.dataset.nav;
-            if ((pg === 'management' || pg === 'audit') && !isAuth) {
-              const modal = el('login-modal');
-              if (modal) modal.classList.remove('hidden');
-              return;
+            document.getElementById('stat-total').innerText = mg.length;
+            document.getElementById('stat-active').innerText = mon.length;
+            document.getElementById('stat-problems').innerText = problems;
+            document.getElementById('stat-lines').innerText = lines.size;
+
+            // Chart 1: OP Time per Machine
+            const ctx1 = document.getElementById('chart-machine').getContext('2d');
+            if (chart1) chart1.destroy();
+            if (mon.length) {
+                const data = mon.map(m => ({ machine: m.machine || 'Unknown', op: m.cumulative_op_time || 0 })).sort((a, b) => a.op - b.op);
+                chart1 = new Chart(ctx1, {
+                    type: 'bar',
+                    data: {
+                        labels: data.map(d => d.machine),
+                        datasets: [{ label: 'OP Time (HRS)', data: data.map(d => d.op), backgroundColor: '#10b981' }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
             }
-            showPage(pg);
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('bg-emerald-100', 'dark:bg-emerald-900/30', 'text-emerald-700'));
-            btn.classList.add('bg-emerald-100', 'dark:bg-emerald-900/30', 'text-emerald-700');
-          };
-        });
 
-        // Filters
-        const resetBtn = el('reset-filters');
-        if (resetBtn) {
-          resetBtn.onclick = () => {
-            currentLineFilter = 'ALL';
-            currentStatusFilter = 'ALL';
-            const lineFilter = el('line-filter');
-            const statusFilter = el('status-filter');
-            if (lineFilter) lineFilter.value = 'ALL';
-            if (statusFilter) statusFilter.value = 'ALL';
-            updateMonitoringTable();
-          };
+            // Chart 2: Problem vs Normal
+            const ctx2 = document.getElementById('chart-problem').getContext('2d');
+            if (chart2) chart2.destroy();
+            const normal = mon.filter(d => d.problem_exists === 'TIDAK ADA').length;
+            chart2 = new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: ['PROBLEM', 'NORMAL'],
+                    datasets: [{ data: [problems, normal], backgroundColor: ['#ef4444', '#10b981'] }]
+                },
+                options: { cutout: '65%', responsive: true }
+            });
         }
 
-        const lineFilter = el('line-filter');
-        if (lineFilter) {
-          lineFilter.onchange = e => { currentLineFilter = e.target.value; updateMonitoringTable(); };
+        function renderMonitoring() {
+            const data = allData.filter(d => d.type === 'monitoring');
+            const tbody = document.getElementById('table-monitoring');
+            if (!data.length) {
+                tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center">TIDAK ADA DATA</td></tr>';
+                return;
+            }
+            tbody.innerHTML = data.slice(0, 50).map(d => `
+                    <tr class="border-b">
+                        <td class="p-2 font-bold">${d.line || '-'}</td>
+                        <td class="p-2">${d.serial_number || '-'}</td>
+                        <td class="p-2">${d.machine || '-'}</td>
+                        <td class="p-2 font-orbitron">${d.cumulative_op_time || 0} HRS</td>
+                        <td class="p-2"><span class="px-2 py-1 rounded-full text-xs ${d.problem_exists === 'ADA' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}">${d.problem_exists || '-'}</span></td>
+                    </tr>
+                `).join('');
         }
 
-        const statusFilter = el('status-filter');
-        if (statusFilter) {
-          statusFilter.onchange = e => { currentStatusFilter = e.target.value; updateMonitoringTable(); };
+        function renderManagement() {
+            const data = allData.filter(d => d.type === 'management');
+            const tbody = document.getElementById('table-management');
+            if (!data.length) {
+                tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center">TIDAK ADA DATA</td></tr>';
+                return;
+            }
+            tbody.innerHTML = data.map(d => `
+                    <tr class="border-b">
+                        <td class="p-2 font-bold">${d.machine_name || '-'}</td>
+                        <td class="p-2">${d.line || '-'}</td>
+                        <td class="p-2">${d.serial_number || '-'}</td>
+                        <td class="p-2">
+                            <button onclick="deleteMgmt('${d.id}')" class="px-2 py-1 bg-red-500 text-white rounded text-xs">HAPUS</button>
+                        </td>
+                    </tr>
+                `).join('');
+        }
+        window.deleteMgmt = async (id) => {
+            if (!isAuth) return alert('Login dulu!');
+            if (!confirm('Hapus data ini?')) return;
+            await supabase.from('management_data').delete().eq('id', id);
+            loadData();
+        };
+
+        function renderAudit() {
+            const data = allData.filter(d => d.type === 'audit');
+            const tbody = document.getElementById('table-audit');
+            if (!data.length) {
+                tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center">TIDAK ADA DATA</td></tr>';
+                return;
+            }
+            tbody.innerHTML = data.slice(0, 50).map(d => `
+                    <tr class="border-b">
+                        <td class="p-2 text-xs">${new Date(d.created_at).toLocaleString()}</td>
+                        <td class="p-2"><span class="px-2 py-1 bg-blue-100 rounded text-xs">${d.user_action || '-'}</span></td>
+                        <td class="p-2">${d.activity || '-'}</td>
+                    </tr>
+                `).join('');
         }
 
-        // Export
-        const exportMon = el('export-monitoring');
-        if (exportMon) {
-          exportMon.onclick = () => {
-            const data = allData.filter(d => d.table_type === 'monitoring');
-            if (!data.length) { alert('No data'); return; }
-            const ws = XLSX.utils.json_to_sheet(data.map(d => ({ DATE: d.monitoring_date, LINE: d.line, SERIAL: d.serial_number, MACHINE: d.machine, 'OP TIME': d.cumulative_op_time, KONDISI: d.ijp_condition, PROBLEM: d.problem_exists })));
+        function renderAlerts() {
+            const mon = allData.filter(d => d.type === 'monitoring');
+            const critical = mon.filter(d => (d.cumulative_op_time || 0) >= 15000);
+            const warning = mon.filter(d => (d.cumulative_op_time || 0) >= 10000 && (d.cumulative_op_time || 0) < 15000);
+            let html = '';
+            critical.forEach(c => {
+                html += `<div class="bg-red-50 border-l-4 border-red-500 p-3 mb-2 rounded">🚨 CRITICAL: ${c.machine} - ${c.cumulative_op_time} HRS</div>`;
+            });
+            warning.forEach(w => {
+                html += `<div class="bg-yellow-50 border-l-4 border-yellow-500 p-3 mb-2 rounded">⚠️ WARNING: ${w.machine} - ${w.cumulative_op_time} HRS</div>`;
+            });
+            document.getElementById('critical-alerts').innerHTML = html || '<p class="text-green-500">✅ Semua aman</p>';
+        }
+
+        // ===== FORM HANDLERS =====
+        document.getElementById('form-monitoring').onsubmit = async (e) => {
+            e.preventDefault();
+            if (!supabase) return alert('DB tidak terhubung!');
+            const data = {
+                line: document.getElementById('input-line').value.toUpperCase(),
+                serial_number: document.getElementById('input-serial').value.toUpperCase(),
+                machine: document.getElementById('input-machine').value.toUpperCase(),
+                monitoring_date: document.getElementById('input-date').value,
+                cumulative_op_time: parseInt(document.getElementById('input-op').value) || 0,
+                ijp_condition: document.getElementById('input-condition').value,
+                problem_exists: document.getElementById('input-problem').value,
+                notes: document.getElementById('input-notes').value || '',
+                filter_replaced: document.getElementById('input-filter').checked
+            };
+            await supabase.from('monitoring_data').insert([data]);
+            document.getElementById('form-success').innerHTML = '✅ Data berhasil disimpan!';
+            document.getElementById('form-success').classList.remove('hidden');
+            setTimeout(() => document.getElementById('form-success').classList.add('hidden'), 3000);
+            document.getElementById('form-monitoring').reset();
+            loadData();
+        };
+
+        document.getElementById('form-management').onsubmit = async (e) => {
+            e.preventDefault();
+            if (!isAuth) return alert('Login dulu!');
+            if (!supabase) return alert('DB tidak terhubung!');
+            const data = {
+                machine_name: document.getElementById('mg-machine').value.toUpperCase(),
+                line: document.getElementById('mg-line').value.toUpperCase(),
+                serial_number: document.getElementById('mg-serial').value.toUpperCase()
+            };
+            await supabase.from('management_data').insert([data]);
+            document.getElementById('mg-success').innerHTML = '✅ Data berhasil ditambahkan!';
+            document.getElementById('mg-success').classList.remove('hidden');
+            setTimeout(() => document.getElementById('mg-success').classList.add('hidden'), 3000);
+            document.getElementById('form-management').reset();
+            loadData();
+        };
+
+        // ===== EXPORT =====
+        document.getElementById('export-monitoring').onclick = () => {
+            const data = allData.filter(d => d.type === 'monitoring');
+            if (!data.length) return alert('Tidak ada data!');
+            const ws = XLSX.utils.json_to_sheet(data);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, 'Monitoring');
             XLSX.writeFile(wb, `monitoring-${new Date().toISOString().split('T')[0]}.xlsx`);
-          };
-        }
+        };
 
-        const exportMgmt = el('export-management');
-        if (exportMgmt) {
-          exportMgmt.onclick = () => {
-            if (!isAuth) { alert('Login required'); return; }
-            const data = allData.filter(d => d.table_type === 'management');
-            if (!data.length) { alert('No data'); return; }
-            const ws = XLSX.utils.json_to_sheet(data.map(d => ({ MACHINE: d.machine_name, LINE: d.line, 'SERIAL': d.serial_number })));
+        document.getElementById('export-management').onclick = () => {
+            const data = allData.filter(d => d.type === 'management');
+            if (!data.length) return alert('Tidak ada data!');
+            const ws = XLSX.utils.json_to_sheet(data);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, 'Management');
             XLSX.writeFile(wb, `management-${new Date().toISOString().split('T')[0]}.xlsx`);
-          };
-        }
+        };
 
-        const exportAudit = el('export-audit');
-        if (exportAudit) {
-          exportAudit.onclick = () => {
-            if (!isAuth) { alert('Login required'); return; }
-            const data = allData.filter(d => d.table_type === 'audit');
-            if (!data.length) { alert('No data'); return; }
-            const ws = XLSX.utils.json_to_sheet(data.map(d => ({ TIMESTAMP: new Date(d.created_at).toLocaleString(), ACTION: d.user_action, DETAILS: d.activity })));
+        document.getElementById('export-audit').onclick = () => {
+            const data = allData.filter(d => d.type === 'audit');
+            if (!data.length) return alert('Tidak ada data!');
+            const ws = XLSX.utils.json_to_sheet(data);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, 'Audit');
             XLSX.writeFile(wb, `audit-${new Date().toISOString().split('T')[0]}.xlsx`);
-          };
-        }
+        };
 
-        // Form dropdowns
-        const machineDropdown = el('machine_dropdown');
-        if (machineDropdown) {
-          machineDropdown.onchange = function() {
-            const recs = managementData.filter(m => m.machine_name === this.value);
-            const serSel = el('serial_dropdown');
-            if (serSel) {
-              serSel.innerHTML = '<option value="">-- SELECT --</option>' + recs.map(r => `<option value="${r.serial_number}" data-line="${r.line}">${r.serial_number}</option>`).join('');
+        // ===== NAVIGATION =====
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.onclick = () => {
+                const page = btn.dataset.nav;
+                document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+                document.getElementById(`page-${page}`).classList.remove('hidden');
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('bg-emerald-100'));
+                btn.classList.add('bg-emerald-100');
+                if (page === 'management' || page === 'audit') {
+                    if (!isAuth) document.getElementById('login-modal').classList.remove('hidden');
+                }
+            };
+        });
+
+        // ===== LOGIN =====
+        document.getElementById('login-btn').onclick = () => {
+            const pwd = document.getElementById('login-password').value;
+            if (pwd === PASSWORD) {
+                isAuth = true;
+                document.getElementById('login-modal').classList.add('hidden');
+                document.getElementById('auth-status').innerHTML = '🟢 LOGGED IN';
+                document.getElementById('auth-status').className = 'text-xs font-bold text-emerald-500';
+                loadData();
+            } else {
+                document.getElementById('login-error').classList.remove('hidden');
+                setTimeout(() => document.getElementById('login-error').classList.add('hidden'), 2000);
             }
-            const machineInput = el('machine');
-            if (machineInput) machineInput.value = this.value;
-            const editBtn = el('edit-serial-btn');
-            if (editBtn) editBtn.classList.toggle('hidden', !this.value);
-          };
+        };
+
+        // ===== THEME TOGGLE =====
+        document.getElementById('theme-toggle').onclick = () => {
+            document.documentElement.classList.toggle('dark');
+        };
+
+        // ===== CLOCK =====
+        function updateClock() {
+            const now = new Date();
+            const clock = document.getElementById('clock');
+            if (clock) clock.innerText = now.toLocaleString();
         }
-
-        const serialDropdown = el('serial_dropdown');
-        if (serialDropdown) {
-          serialDropdown.onchange = function() {
-            const opt = this.options[this.selectedIndex];
-            const lineInput = el('line');
-            if (lineInput && opt) lineInput.value = opt?.dataset?.line || '';
-          };
-        }
-
-        const problemExists = el('problem_exists');
-        if (problemExists) {
-          problemExists.onchange = e => {
-            const section = el('problem-section');
-            if (section) section.classList.toggle('hidden', e.target.value !== 'ADA');
-          };
-        }
-
-        // Monitoring Form
-        const monitoringForm = el('monitoring-form');
-        if (monitoringForm) {
-          monitoringForm.onsubmit = async (e) => {
-            e.preventDefault();
-            if (!supabase) { alert('DB not connected'); return; }
-            const btn = e.target.querySelector('button[type="submit"]');
-            const origText = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = 'MENYIMPAN...';
-            try {
-              const filterReplaced = el('filter_replaced')?.checked || false;
-              let finalOp = parseInt(el('cumulative_op_time')?.value || 0) || 0;
-              if (filterReplaced) finalOp = 0;
-
-              let photoUrl = '';
-              const file = el('photo_upload')?.files[0];
-              if (file && el('problem_exists')?.value === 'ADA') {
-                const fname = `ijp-photos/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-                const { error } = await supabase.storage.from('ijp_monitoring').upload(fname, file);
-                if (!error) photoUrl = supabase.storage.from('ijp_monitoring').getPublicUrl(fname).data.publicUrl;
-              }
-
-              const data = {
-                line: el('line')?.value?.toUpperCase() || '',
-                serial_number: el('serial_dropdown')?.value || '',
-                machine: el('machine')?.value || '',
-                monitoring_date: el('monitoring_date')?.value || '',
-                cumulative_op_time: finalOp,
-                weekly_increment: 0,
-                ijp_condition: el('ijp_condition')?.value || '',
-                problem_exists: el('problem_exists')?.value || '',
-                problem_description: el('problem_description')?.value || '',
-                problem_action: el('problem_action')?.value || '',
-                notes: el('notes')?.value || '',
-                photo_url: photoUrl,
-                filter_replaced: filterReplaced
-              };
-
-              await supabase.from('monitoring_data').insert([data]);
-              await logAudit('MONITORING ADDED', `SERIAL:${data.serial_number}`);
-              
-              const success = el('form-success');
-              if (success) {
-                success.innerHTML = '✅ DATA BERHASIL DISIMPAN!';
-                success.classList.remove('hidden');
-                setTimeout(() => success.classList.add('hidden'), 3000);
-              }
-              
-              e.target.reset();
-              const problemSection = el('problem-section');
-              if (problemSection) problemSection.classList.add('hidden');
-              const dateInput = el('monitoring_date');
-              if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
-              await loadAll();
-            } catch (err) { alert('Error: ' + err.message); } finally { btn.disabled = false; btn.innerHTML = origText; }
-          };
-        }
-
-        // Management Form
-        const managementForm = el('management-form');
-        if (managementForm) {
-          managementForm.onsubmit = async (e) => {
-            e.preventDefault();
-            if (!isAuth) { alert('Login required'); return; }
-            if (!supabase) { alert('DB not connected'); return; }
-            const btn = e.target.querySelector('button[type="submit"]');
-            const origText = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = 'MENYIMPAN...';
-            try {
-              const data = {
-                machine_name: el('machine_name')?.value?.toUpperCase() || '',
-                line: el('line_mg')?.value?.toUpperCase() || '',
-                serial_number: el('service')?.value?.toUpperCase() || ''
-              };
-              await supabase.from('management_data').insert([data]);
-              await logAudit('IJP REGISTERED', data.machine_name);
-              const success = el('management-success');
-              if (success) {
-                success.innerHTML = '✅ DATA BERHASIL DITAMBAHKAN!';
-                success.classList.remove('hidden');
-                setTimeout(() => success.classList.add('hidden'), 3000);
-              }
-              e.target.reset();
-              await loadAll();
-            } catch (err) { alert('Error: ' + err.message); } finally { btn.disabled = false; btn.innerHTML = origText; }
-          };
-        }
-
-        // Edit Serial Button - FIXED (ditambahkan)
-        const editBtn = el('edit-serial-btn');
-        if (editBtn) {
-          editBtn.onclick = () => {
-            showPage('management');
-            const nav = document.querySelector('[data-nav="management"]');
-            if (nav) nav.classList.add('bg-emerald-100');
-          };
-        }
-      }
-
-      function showPage(page) {
-        document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
-        const target = document.getElementById(`page-${page}`);
-        if (target) target.classList.remove('hidden');
-      }
-
-      function updateAuthUI() {
-        const ind = document.getElementById('auth-indicator');
-        const txt = document.getElementById('auth-text');
-        const logout = document.getElementById('logout-btn');
-        if (isAuth) {
-          if (ind) ind.className = 'w-2 h-2 rounded-full bg-emerald-500';
-          if (txt) txt.innerText = 'LOGGED IN';
-          if (logout) logout.classList.remove('hidden');
-        } else {
-          if (ind) ind.className = 'w-2 h-2 rounded-full bg-red-500';
-          if (txt) txt.innerText = 'NOT LOGGED IN';
-          if (logout) logout.classList.add('hidden');
-        }
-      }
-
-      function updateClock() {
-        const d = new Date();
-        const clock = document.getElementById('current-time');
-        if (clock) {
-          clock.innerText = d.toLocaleString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).toUpperCase();
-        }
-      }
-
-      // ===== START =====
-      (async function() {
-        console.log('🚀 App starting...');
-        setupEvents();
-        updateClock();
         setInterval(updateClock, 1000);
-        
-        const dateInput = document.getElementById('monitoring_date');
-        if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
 
-        if (sessionStorage.getItem('ijp_auth') === 'true') isAuth = true;
-        updateAuthUI();
-
-        if (await initSupabase()) {
-          await loadAll();
-          try {
-            supabase.channel('table-changes')
-              .on('postgres_changes', { event: '*', schema: 'public', table: 'monitoring_data' }, () => loadAll())
-              .on('postgres_changes', { event: '*', schema: 'public', table: 'management_data' }, () => loadAll())
-              .subscribe();
-            console.log('✅ Realtime subscription active');
-          } catch (e) { console.log('Realtime not available'); }
-        }
-        console.log('✅ App ready!');
-      })();
-
-    })();
-  </script>
+        // ===== START =====
+        (async function() {
+            if (await initDB()) {
+                await loadData();
+            }
+        })();
+    </script>
 
 </body>
 </html>

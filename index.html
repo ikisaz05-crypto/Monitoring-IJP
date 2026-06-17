@@ -54,7 +54,7 @@
         <span id="auth-indicator" class="w-2 h-2 rounded-full bg-red-500"></span>
         <span id="auth-text" class="font-bold">NOT LOGGED IN</span>
         <button id="logout-btn" class="hidden px-3 py-1 bg-red-500 text-white rounded-lg">LOGOUT</button>
-        <button id="theme-toggle" class="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700">🌓</button>
+        <button id="theme-toggle" class="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-xl">🌓</button>
       </div>
     </div>
   </nav>
@@ -65,10 +65,22 @@
     <!-- DASHBOARD -->
     <div id="page-dashboard" class="page">
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4 border-l-4 border-emerald-500"><div class="text-xs text-gray-400">Total IJP</div><div id="stat-total" class="text-3xl font-orbitron font-bold">0</div></div>
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4 border-l-4 border-blue-500"><div class="text-xs text-gray-400">Active Monitoring</div><div id="stat-active" class="text-3xl font-orbitron font-bold">0</div></div>
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4 border-l-4 border-red-500"><div class="text-xs text-gray-400">Problems</div><div id="stat-problems" class="text-3xl font-orbitron font-bold">0</div></div>
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4 border-l-4 border-purple-500"><div class="text-xs text-gray-400">Lines</div><div id="stat-lines" class="text-3xl font-orbitron font-bold">0</div></div>
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4 border-l-4 border-emerald-500">
+          <div class="text-xs text-gray-400">Total IJP</div>
+          <div id="stat-total" class="text-3xl font-orbitron font-bold">0</div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4 border-l-4 border-blue-500">
+          <div class="text-xs text-gray-400">Active Monitoring</div>
+          <div id="stat-active" class="text-3xl font-orbitron font-bold">0</div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4 border-l-4 border-red-500">
+          <div class="text-xs text-gray-400">Problems</div>
+          <div id="stat-problems" class="text-3xl font-orbitron font-bold">0</div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4 border-l-4 border-purple-500">
+          <div class="text-xs text-gray-400">Lines</div>
+          <div id="stat-lines" class="text-3xl font-orbitron font-bold">0</div>
+        </div>
       </div>
 
       <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4 mb-6">
@@ -152,16 +164,36 @@
         <div id="management-success" class="hidden mt-3 p-3 bg-emerald-100 rounded-lg text-center"></div>
       </div>
       <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4">
-        <div class="flex justify-between mb-4"><h3 class="font-bold text-sm">📋 Registered IJP</h3><button id="export-management" class="px-3 py-1 bg-emerald-600 text-white rounded-lg text-xs font-bold">📥 EXPORT</button></div>
-        <div class="overflow-x-auto max-h-96 overflow-y-auto"><table class="w-full text-sm"><thead class="bg-gray-100 dark:bg-gray-700 sticky top-0"><tr><th>MACHINE</th><th>LINE</th><th>SERIAL</th><th>ACTION</th></tr></thead><tbody id="management-table"></tbody></table></div>
+        <div class="flex justify-between mb-4">
+          <h3 class="font-bold text-sm">📋 Registered IJP</h3>
+          <button id="export-management" class="px-3 py-1 bg-emerald-600 text-white rounded-lg text-xs font-bold">📥 EXPORT</button>
+        </div>
+        <div class="overflow-x-auto max-h-96 overflow-y-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-gray-100 dark:bg-gray-700 sticky top-0">
+              <tr><th>MACHINE</th><th>LINE</th><th>SERIAL</th><th>ACTION</th></tr>
+            </thead>
+            <tbody id="management-table"></tbody>
+          </table>
+        </div>
       </div>
     </div>
 
     <!-- AUDIT -->
     <div id="page-audit" class="page hidden">
       <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4">
-        <div class="flex justify-between mb-4"><h3 class="font-bold text-sm">📋 Audit Logs <span id="audit-count" class="text-xs text-gray-400">0 RECORDS</span></h3><button id="export-audit" class="px-3 py-1 bg-emerald-600 text-white rounded-lg text-xs font-bold">📥 EXPORT</button></div>
-        <div class="overflow-x-auto max-h-96 overflow-y-auto"><table class="w-full text-sm"><thead class="bg-gray-100 dark:bg-gray-700 sticky top-0"><tr><th>TIMESTAMP</th><th>ACTION</th><th>DETAILS</th></tr></thead><tbody id="audit-table"></tbody></table></div>
+        <div class="flex justify-between mb-4">
+          <h3 class="font-bold text-sm">📋 Audit Logs <span id="audit-count" class="text-xs text-gray-400">0 RECORDS</span></h3>
+          <button id="export-audit" class="px-3 py-1 bg-emerald-600 text-white rounded-lg text-xs font-bold">📥 EXPORT</button>
+        </div>
+        <div class="overflow-x-auto max-h-96 overflow-y-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-gray-100 dark:bg-gray-700 sticky top-0">
+              <tr><th>TIMESTAMP</th><th>ACTION</th><th>DETAILS</th></tr>
+            </thead>
+            <tbody id="audit-table"></tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -180,6 +212,8 @@
       const PASS = 'Dankos2026';
       let chartInst = null, problemChart = null, weeklyTrend = null, machineComp = null;
       let currentLineFilter = 'ALL', currentStatusFilter = 'ALL';
+      let retryCount = 0;
+      const MAX_RETRY = 3;
 
       // ===== INIT =====
       async function initSupabase() {
@@ -216,9 +250,14 @@
         if (!supabase) return;
         try {
           console.log('Loading data...');
-          const { data: mon } = await supabase.from('monitoring_data').select('*').order('monitoring_date', { ascending: false });
-          const { data: mg } = await supabase.from('management_data').select('*').order('created_at', { ascending: false });
-          const { data: aud } = await supabase.from('audit_logs').select('*').order('created_at', { ascending: false });
+          const { data: mon, error: e1 } = await supabase.from('monitoring_data').select('*').order('monitoring_date', { ascending: false });
+          if (e1) throw e1;
+          
+          const { data: mg, error: e2 } = await supabase.from('management_data').select('*').order('created_at', { ascending: false });
+          if (e2) throw e2;
+          
+          const { data: aud, error: e3 } = await supabase.from('audit_logs').select('*').order('created_at', { ascending: false });
+          if (e3) throw e3;
 
           allData = [
             ...(mon || []).map(d => ({ ...d, table_type: 'monitoring' })),
@@ -227,10 +266,19 @@
           ];
           managementData = mg || [];
 
-          console.log('Data loaded:', allData.length, 'records');
+          console.log('✅ Data loaded:', allData.length, 'records');
+          console.log('📊 Monitoring:', mon?.length || 0);
+          console.log('📊 Management:', mg?.length || 0);
+          console.log('📊 Audit:', aud?.length || 0);
+          
           renderAll();
+          retryCount = 0;
         } catch (err) {
           console.error('Load error:', err);
+          if (retryCount < MAX_RETRY) {
+            retryCount++;
+            setTimeout(loadAll, 2000);
+          }
         }
       }
 
@@ -242,6 +290,7 @@
 
       // ===== RENDER =====
       function renderAll() {
+        console.log('🔄 Rendering UI...');
         updateDashboardUI();
         updateFormDropdowns();
         updateLineFilter();
@@ -249,6 +298,7 @@
         if (isAuth) { updateMgmtTable(); updateAuditTable(); }
         updateCriticalAlerts();
         populateWeekSelector();
+        console.log('✅ UI rendered');
       }
 
       function updateDashboardUI() {
@@ -258,17 +308,21 @@
         const normal = mon.filter(d => d.problem_exists === 'TIDAK ADA').length;
         const total = problems + normal;
 
-        document.getElementById('stat-total').innerText = mgmt.length;
-        document.getElementById('stat-active').innerText = mon.length;
-        document.getElementById('stat-problems').innerText = problems;
-        document.getElementById('stat-lines').innerText = new Set(mon.map(d => d.line)).size;
+        const el = id => document.getElementById(id);
+        if (el('stat-total')) el('stat-total').innerText = mgmt.length;
+        if (el('stat-active')) el('stat-active').innerText = mon.length;
+        if (el('stat-problems')) el('stat-problems').innerText = problems;
+        const lines = new Set(mon.map(d => d.line));
+        if (el('stat-lines')) el('stat-lines').innerText = lines.size;
 
         let pct = total ? ((problems / total) * 100).toFixed(1) : 0;
         let nPct = total ? ((normal / total) * 100).toFixed(1) : 0;
-        document.getElementById('problem-count').innerText = `${problems} UNIT`;
-        document.getElementById('normal-count').innerText = `${normal} UNIT`;
-        document.getElementById('problem-progress-bar').style.width = total ? (problems / total) * 100 + '%' : '0%';
-        document.getElementById('problem-ratio').innerHTML = `⚖️ PROBLEM RATIO: <span class="text-red-500">${pct}%</span> : <span class="text-emerald-500">${nPct}%</span>`;
+        if (el('problem-count')) el('problem-count').innerText = `${problems} UNIT`;
+        if (el('normal-count')) el('normal-count').innerText = `${normal} UNIT`;
+        if (el('problem-progress-bar')) el('problem-progress-bar').style.width = total ? (problems / total) * 100 + '%' : '0%';
+        if (el('problem-ratio')) {
+          el('problem-ratio').innerHTML = `⚖️ PROBLEM RATIO: <span class="text-red-500">${pct}%</span> : <span class="text-emerald-500">${nPct}%</span>`;
+        }
 
         // Charts
         const ctx = document.getElementById('monitoring-chart')?.getContext('2d');
@@ -301,8 +355,14 @@
         if (currentLineFilter !== 'ALL') data = data.filter(d => d.line === currentLineFilter);
         if (currentStatusFilter !== 'ALL') data = data.filter(d => getStatus(d.cumulative_op_time || 0) === currentStatusFilter);
 
-        document.getElementById('filtered-count').textContent = `${data.length}/${allData.filter(d => d.table_type === 'monitoring').length}`;
+        const filteredCount = document.getElementById('filtered-count');
+        if (filteredCount) {
+          const totalData = allData.filter(d => d.table_type === 'monitoring').length;
+          filteredCount.textContent = `${data.length}/${totalData}`;
+        }
+        
         const tbody = document.getElementById('monitoring-table');
+        if (!tbody) return;
         if (!data.length) { tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center">TIDAK ADA DATA</td></tr>'; return; }
 
         tbody.innerHTML = data.slice(0, 20).map(item => {
@@ -402,15 +462,18 @@
       function updateMgmtTable() {
         const mg = allData.filter(d => d.table_type === 'management');
         const tbody = document.getElementById('management-table');
+        if (!tbody) return;
         if (!mg.length) { tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center">NO DATA</td></tr>'; return; }
         tbody.innerHTML = mg.map(m => `<tr><td class="p-2 font-semibold">${m.machine_name}</td><td class="p-2">${m.line}</td><td class="p-2"><input type="text" data-id="${m.id}" data-original="${m.serial_number}" value="${m.serial_number}" class="border rounded px-2 py-1 text-sm w-full"><button onclick="window.saveSerial('${m.id}',this)" class="bg-green-500 text-white px-2 py-1 rounded text-xs">✓</button></td><td class="p-2"><button onclick="window.delRecord({id:'${m.id}'})" class="text-red-500 font-bold">DELETE</button></td></tr>`).join('');
       }
 
       window.saveSerial = async (id, btn) => {
-        if (!isAuth || !supabase) return alert('Login required / DB not connected');
+        if (!isAuth) { alert('Login required'); return; }
+        if (!supabase) { alert('DB not connected'); return; }
         const input = document.querySelector(`input[data-id="${id}"]`);
         if (!input) return;
-        const newVal = input.value.toUpperCase(), oldVal = input.dataset.original;
+        const newVal = input.value.toUpperCase();
+        const oldVal = input.dataset.original;
         if (!newVal || newVal === oldVal) return;
         btn.disabled = true;
         btn.textContent = '...';
@@ -419,12 +482,12 @@
           await logAudit('SERIAL UPDATED', `ID:${id} NEW:${newVal}`);
           alert('✓ Updated!');
           loadAll();
-        } catch (err) { alert('Error: ' + err.message); input.value = oldVal; } finally { btn.disabled = false;
-          btn.textContent = '✓'; }
+        } catch (err) { alert('Error: ' + err.message); input.value = oldVal; } finally { btn.disabled = false; btn.textContent = '✓'; }
       };
 
       window.delRecord = async (rec) => {
-        if (!isAuth || !supabase) return alert('Login required / DB not connected');
+        if (!isAuth) { alert('Login required'); return; }
+        if (!supabase) { alert('DB not connected'); return; }
         if (!confirm('DELETE?')) return;
         try {
           await supabase.from('management_data').delete().eq('id', rec.id);
@@ -438,6 +501,7 @@
         const aud = allData.filter(d => d.table_type === 'audit');
         document.getElementById('audit-count').textContent = `${aud.length} RECORDS`;
         const tbody = document.getElementById('audit-table');
+        if (!tbody) return;
         if (!aud.length) { tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center">NO ACTIVITY</td></tr>'; return; }
         tbody.innerHTML = aud.map(a => `<tr><td class="p-2 text-xs font-mono">${new Date(a.created_at).toLocaleString()}</td><td class="p-2"><span class="px-2 py-1 bg-cyan-100 rounded text-xs font-bold">${a.user_action}</span></td><td class="p-2">${a.activity}</td></tr>`).join('');
       }
@@ -450,173 +514,265 @@
       function setupEvents() {
         const el = id => document.getElementById(id);
 
-        el('login-submit').onclick = () => {
-          if (el('login-password').value === PASS) {
-            isAuth = true;
-            sessionStorage.setItem('ijp_auth', 'true');
-            el('login-modal').classList.add('hidden');
+        // Login
+        const loginBtn = el('login-submit');
+        if (loginBtn) {
+          loginBtn.onclick = () => {
+            const pwd = el('login-password');
+            if (pwd && pwd.value === PASS) {
+              isAuth = true;
+              sessionStorage.setItem('ijp_auth', 'true');
+              const modal = el('login-modal');
+              if (modal) modal.classList.add('hidden');
+              updateAuthUI();
+              loadAll();
+            } else {
+              const err = el('login-error');
+              if (err) {
+                err.classList.remove('hidden');
+                setTimeout(() => err.classList.add('hidden'), 2000);
+              }
+            }
+          };
+        }
+
+        // Logout
+        const logoutBtn = el('logout-btn');
+        if (logoutBtn) {
+          logoutBtn.onclick = () => {
+            isAuth = false;
+            sessionStorage.removeItem('ijp_auth');
             updateAuthUI();
-            loadAll();
-          } else {
-            el('login-error').classList.remove('hidden');
-            setTimeout(() => el('login-error').classList.add('hidden'), 2000);
-          }
-        };
+            showPage('dashboard');
+            logAudit('LOGOUT', 'Manual');
+          };
+        }
 
-        el('logout-btn').onclick = () => { isAuth = false;
-          sessionStorage.removeItem('ijp_auth');
-          updateAuthUI();
-          showPage('dashboard');
-          logAudit('LOGOUT', 'Manual'); };
+        // Theme Toggle - FIXED
+        const themeBtn = el('theme-toggle');
+        if (themeBtn) {
+          themeBtn.onclick = () => {
+            document.documentElement.classList.toggle('dark');
+            console.log('Dark mode toggled');
+          };
+        }
 
-        el('theme-toggle').onclick = () => document.documentElement.classList.toggle('dark');
-
+        // Navigation
         document.querySelectorAll('.nav-btn').forEach(btn => {
           btn.onclick = () => {
             const pg = btn.dataset.nav;
-            if ((pg === 'management' || pg === 'audit') && !isAuth) { el('login-modal').classList.remove('hidden'); return; }
+            if ((pg === 'management' || pg === 'audit') && !isAuth) {
+              const modal = el('login-modal');
+              if (modal) modal.classList.remove('hidden');
+              return;
+            }
             showPage(pg);
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('bg-emerald-100', 'dark:bg-emerald-900/30', 'text-emerald-700'));
             btn.classList.add('bg-emerald-100', 'dark:bg-emerald-900/30', 'text-emerald-700');
           };
         });
 
-        el('reset-filters').onclick = () => { currentLineFilter = 'ALL';
-          currentStatusFilter = 'ALL';
-          el('line-filter').value = 'ALL';
-          el('status-filter').value = 'ALL';
-          updateMonitoringTable(); };
+        // Filters
+        const resetBtn = el('reset-filters');
+        if (resetBtn) {
+          resetBtn.onclick = () => {
+            currentLineFilter = 'ALL';
+            currentStatusFilter = 'ALL';
+            const lineFilter = el('line-filter');
+            const statusFilter = el('status-filter');
+            if (lineFilter) lineFilter.value = 'ALL';
+            if (statusFilter) statusFilter.value = 'ALL';
+            updateMonitoringTable();
+          };
+        }
 
-        el('line-filter').onchange = e => { currentLineFilter = e.target.value;
-          updateMonitoringTable(); };
-        el('status-filter').onchange = e => { currentStatusFilter = e.target.value;
-          updateMonitoringTable(); };
+        const lineFilter = el('line-filter');
+        if (lineFilter) {
+          lineFilter.onchange = e => { currentLineFilter = e.target.value; updateMonitoringTable(); };
+        }
 
-        el('export-monitoring').onclick = () => {
-          const data = allData.filter(d => d.table_type === 'monitoring');
-          if (!data.length) return alert('No data');
-          const ws = XLSX.utils.json_to_sheet(data.map(d => ({ DATE: d.monitoring_date, LINE: d.line, SERIAL: d.serial_number, MACHINE: d.machine, 'OP TIME': d.cumulative_op_time, KONDISI: d.ijp_condition, PROBLEM: d.problem_exists })));
-          const wb = XLSX.utils.book_new();
-          XLSX.utils.book_append_sheet(wb, ws, 'Monitoring');
-          XLSX.writeFile(wb, `monitoring-${new Date().toISOString().split('T')[0]}.xlsx`);
-        };
+        const statusFilter = el('status-filter');
+        if (statusFilter) {
+          statusFilter.onchange = e => { currentStatusFilter = e.target.value; updateMonitoringTable(); };
+        }
 
-        el('export-management').onclick = () => {
-          if (!isAuth) return alert('Login required');
-          const data = allData.filter(d => d.table_type === 'management');
-          if (!data.length) return alert('No data');
-          const ws = XLSX.utils.json_to_sheet(data.map(d => ({ MACHINE: d.machine_name, LINE: d.line, 'SERIAL': d.serial_number })));
-          const wb = XLSX.utils.book_new();
-          XLSX.utils.book_append_sheet(wb, ws, 'Management');
-          XLSX.writeFile(wb, `management-${new Date().toISOString().split('T')[0]}.xlsx`);
-        };
+        // Export
+        const exportMon = el('export-monitoring');
+        if (exportMon) {
+          exportMon.onclick = () => {
+            const data = allData.filter(d => d.table_type === 'monitoring');
+            if (!data.length) { alert('No data'); return; }
+            const ws = XLSX.utils.json_to_sheet(data.map(d => ({ DATE: d.monitoring_date, LINE: d.line, SERIAL: d.serial_number, MACHINE: d.machine, 'OP TIME': d.cumulative_op_time, KONDISI: d.ijp_condition, PROBLEM: d.problem_exists })));
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Monitoring');
+            XLSX.writeFile(wb, `monitoring-${new Date().toISOString().split('T')[0]}.xlsx`);
+          };
+        }
 
-        el('export-audit').onclick = () => {
-          if (!isAuth) return alert('Login required');
-          const data = allData.filter(d => d.table_type === 'audit');
-          if (!data.length) return alert('No data');
-          const ws = XLSX.utils.json_to_sheet(data.map(d => ({ TIMESTAMP: new Date(d.created_at).toLocaleString(), ACTION: d.user_action, DETAILS: d.activity })));
-          const wb = XLSX.utils.book_new();
-          XLSX.utils.book_append_sheet(wb, ws, 'Audit');
-          XLSX.writeFile(wb, `audit-${new Date().toISOString().split('T')[0]}.xlsx`);
-        };
+        const exportMgmt = el('export-management');
+        if (exportMgmt) {
+          exportMgmt.onclick = () => {
+            if (!isAuth) { alert('Login required'); return; }
+            const data = allData.filter(d => d.table_type === 'management');
+            if (!data.length) { alert('No data'); return; }
+            const ws = XLSX.utils.json_to_sheet(data.map(d => ({ MACHINE: d.machine_name, LINE: d.line, 'SERIAL': d.serial_number })));
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Management');
+            XLSX.writeFile(wb, `management-${new Date().toISOString().split('T')[0]}.xlsx`);
+          };
+        }
 
-        el('machine_dropdown').onchange = function() {
-          const recs = managementData.filter(m => m.machine_name === this.value);
-          const serSel = el('serial_dropdown');
-          serSel.innerHTML = '<option value="">-- SELECT --</option>' + recs.map(r => `<option value="${r.serial_number}" data-line="${r.line}">${r.serial_number}</option>`).join('');
-          el('machine').value = this.value;
-          el('edit-serial-btn').classList.toggle('hidden', !this.value);
-        };
+        const exportAudit = el('export-audit');
+        if (exportAudit) {
+          exportAudit.onclick = () => {
+            if (!isAuth) { alert('Login required'); return; }
+            const data = allData.filter(d => d.table_type === 'audit');
+            if (!data.length) { alert('No data'); return; }
+            const ws = XLSX.utils.json_to_sheet(data.map(d => ({ TIMESTAMP: new Date(d.created_at).toLocaleString(), ACTION: d.user_action, DETAILS: d.activity })));
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Audit');
+            XLSX.writeFile(wb, `audit-${new Date().toISOString().split('T')[0]}.xlsx`);
+          };
+        }
 
-        el('serial_dropdown').onchange = function() {
-          const opt = this.options[this.selectedIndex];
-          el('line').value = opt?.dataset?.line || '';
-        };
-
-        el('problem_exists').onchange = e => el('problem-section').classList.toggle('hidden', e.target.value !== 'ADA');
-
-        el('monitoring-form').onsubmit = async (e) => {
-          e.preventDefault();
-          if (!supabase) return alert('DB not connected');
-          const btn = e.target.querySelector('button[type="submit"]');
-          btn.disabled = true;
-          btn.innerHTML = 'MENYIMPAN...';
-          try {
-            const filterReplaced = el('filter_replaced').checked;
-            let finalOp = parseInt(el('cumulative_op_time').value) || 0;
-            if (filterReplaced) finalOp = 0;
-
-            let photoUrl = '';
-            const file = el('photo_upload').files[0];
-            if (file && el('problem_exists').value === 'ADA') {
-              const fname = `ijp-photos/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-              const { error } = await supabase.storage.from('ijp_monitoring').upload(fname, file);
-              if (!error) photoUrl = supabase.storage.from('ijp_monitoring').getPublicUrl(fname).data.publicUrl;
+        // Form dropdowns
+        const machineDropdown = el('machine_dropdown');
+        if (machineDropdown) {
+          machineDropdown.onchange = function() {
+            const recs = managementData.filter(m => m.machine_name === this.value);
+            const serSel = el('serial_dropdown');
+            if (serSel) {
+              serSel.innerHTML = '<option value="">-- SELECT --</option>' + recs.map(r => `<option value="${r.serial_number}" data-line="${r.line}">${r.serial_number}</option>`).join('');
             }
+            const machineInput = el('machine');
+            if (machineInput) machineInput.value = this.value;
+            const editBtn = el('edit-serial-btn');
+            if (editBtn) editBtn.classList.toggle('hidden', !this.value);
+          };
+        }
 
-            const data = {
-              line: el('line').value.toUpperCase(),
-              serial_number: el('serial_dropdown').value,
-              machine: el('machine').value,
-              monitoring_date: el('monitoring_date').value,
-              cumulative_op_time: finalOp,
-              weekly_increment: 0,
-              ijp_condition: el('ijp_condition').value,
-              problem_exists: el('problem_exists').value,
-              problem_description: el('problem_description').value || '',
-              problem_action: el('problem_action').value || '',
-              notes: el('notes').value || '',
-              photo_url: photoUrl,
-              filter_replaced: filterReplaced
-            };
+        const serialDropdown = el('serial_dropdown');
+        if (serialDropdown) {
+          serialDropdown.onchange = function() {
+            const opt = this.options[this.selectedIndex];
+            const lineInput = el('line');
+            if (lineInput && opt) lineInput.value = opt?.dataset?.line || '';
+          };
+        }
 
-            await supabase.from('monitoring_data').insert([data]);
-            await logAudit('MONITORING ADDED', `SERIAL:${data.serial_number}`);
-            const success = el('form-success');
-            success.innerHTML = '✅ DATA BERHASIL DISIMPAN!';
-            success.classList.remove('hidden');
-            setTimeout(() => success.classList.add('hidden'), 3000);
-            e.target.reset();
-            el('problem-section').classList.add('hidden');
-            el('monitoring_date').value = new Date().toISOString().split('T')[0];
-            await loadAll();
-          } catch (err) { alert('Error: ' + err.message); } finally { btn.disabled = false;
-            btn.innerHTML = '💾 SIMPAN'; }
-        };
+        const problemExists = el('problem_exists');
+        if (problemExists) {
+          problemExists.onchange = e => {
+            const section = el('problem-section');
+            if (section) section.classList.toggle('hidden', e.target.value !== 'ADA');
+          };
+        }
 
-        el('management-form').onsubmit = async (e) => {
-          e.preventDefault();
-          if (!isAuth) return alert('Login required');
-          if (!supabase) return alert('DB not connected');
-          const btn = e.target.querySelector('button[type="submit"]');
-          btn.disabled = true;
-          btn.innerHTML = 'MENYIMPAN...';
-          try {
-            const data = {
-              machine_name: el('machine_name').value.toUpperCase(),
-              line: el('line_mg').value.toUpperCase(),
-              serial_number: el('service').value.toUpperCase()
-            };
-            await supabase.from('management_data').insert([data]);
-            await logAudit('IJP REGISTERED', data.machine_name);
-            const success = el('management-success');
-            success.innerHTML = '✅ DATA BERHASIL DITAMBAHKAN!';
-            success.classList.remove('hidden');
-            setTimeout(() => success.classList.add('hidden'), 3000);
-            e.target.reset();
-            await loadAll();
-          } catch (err) { alert('Error: ' + err.message); } finally { btn.disabled = false;
-            btn.innerHTML = '💾 REGISTER'; }
-        };
+        // Monitoring Form
+        const monitoringForm = el('monitoring-form');
+        if (monitoringForm) {
+          monitoringForm.onsubmit = async (e) => {
+            e.preventDefault();
+            if (!supabase) { alert('DB not connected'); return; }
+            const btn = e.target.querySelector('button[type="submit"]');
+            const origText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = 'MENYIMPAN...';
+            try {
+              const filterReplaced = el('filter_replaced')?.checked || false;
+              let finalOp = parseInt(el('cumulative_op_time')?.value || 0) || 0;
+              if (filterReplaced) finalOp = 0;
 
-        el('edit-serial-btn').onclick = () => { showPage('management');
-          document.querySelector('[data-nav="management"]').classList.add('bg-emerald-100'); };
+              let photoUrl = '';
+              const file = el('photo_upload')?.files[0];
+              if (file && el('problem_exists')?.value === 'ADA') {
+                const fname = `ijp-photos/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+                const { error } = await supabase.storage.from('ijp_monitoring').upload(fname, file);
+                if (!error) photoUrl = supabase.storage.from('ijp_monitoring').getPublicUrl(fname).data.publicUrl;
+              }
+
+              const data = {
+                line: el('line')?.value?.toUpperCase() || '',
+                serial_number: el('serial_dropdown')?.value || '',
+                machine: el('machine')?.value || '',
+                monitoring_date: el('monitoring_date')?.value || '',
+                cumulative_op_time: finalOp,
+                weekly_increment: 0,
+                ijp_condition: el('ijp_condition')?.value || '',
+                problem_exists: el('problem_exists')?.value || '',
+                problem_description: el('problem_description')?.value || '',
+                problem_action: el('problem_action')?.value || '',
+                notes: el('notes')?.value || '',
+                photo_url: photoUrl,
+                filter_replaced: filterReplaced
+              };
+
+              await supabase.from('monitoring_data').insert([data]);
+              await logAudit('MONITORING ADDED', `SERIAL:${data.serial_number}`);
+              
+              const success = el('form-success');
+              if (success) {
+                success.innerHTML = '✅ DATA BERHASIL DISIMPAN!';
+                success.classList.remove('hidden');
+                setTimeout(() => success.classList.add('hidden'), 3000);
+              }
+              
+              e.target.reset();
+              const problemSection = el('problem-section');
+              if (problemSection) problemSection.classList.add('hidden');
+              const dateInput = el('monitoring_date');
+              if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
+              await loadAll();
+            } catch (err) { alert('Error: ' + err.message); } finally { btn.disabled = false; btn.innerHTML = origText; }
+          };
+        }
+
+        // Management Form
+        const managementForm = el('management-form');
+        if (managementForm) {
+          managementForm.onsubmit = async (e) => {
+            e.preventDefault();
+            if (!isAuth) { alert('Login required'); return; }
+            if (!supabase) { alert('DB not connected'); return; }
+            const btn = e.target.querySelector('button[type="submit"]');
+            const origText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = 'MENYIMPAN...';
+            try {
+              const data = {
+                machine_name: el('machine_name')?.value?.toUpperCase() || '',
+                line: el('line_mg')?.value?.toUpperCase() || '',
+                serial_number: el('service')?.value?.toUpperCase() || ''
+              };
+              await supabase.from('management_data').insert([data]);
+              await logAudit('IJP REGISTERED', data.machine_name);
+              const success = el('management-success');
+              if (success) {
+                success.innerHTML = '✅ DATA BERHASIL DITAMBAHKAN!';
+                success.classList.remove('hidden');
+                setTimeout(() => success.classList.add('hidden'), 3000);
+              }
+              e.target.reset();
+              await loadAll();
+            } catch (err) { alert('Error: ' + err.message); } finally { btn.disabled = false; btn.innerHTML = origText; }
+          };
+        }
+
+        // Edit Serial Button - FIXED (ditambahkan)
+        const editBtn = el('edit-serial-btn');
+        if (editBtn) {
+          editBtn.onclick = () => {
+            showPage('management');
+            const nav = document.querySelector('[data-nav="management"]');
+            if (nav) nav.classList.add('bg-emerald-100');
+          };
+        }
       }
 
       function showPage(page) {
         document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
-        document.getElementById(`page-${page}`).classList.remove('hidden');
+        const target = document.getElementById(`page-${page}`);
+        if (target) target.classList.remove('hidden');
       }
 
       function updateAuthUI() {
@@ -624,27 +780,33 @@
         const txt = document.getElementById('auth-text');
         const logout = document.getElementById('logout-btn');
         if (isAuth) {
-          ind.className = 'w-2 h-2 rounded-full bg-emerald-500';
-          txt.innerText = 'LOGGED IN';
-          logout.classList.remove('hidden');
+          if (ind) ind.className = 'w-2 h-2 rounded-full bg-emerald-500';
+          if (txt) txt.innerText = 'LOGGED IN';
+          if (logout) logout.classList.remove('hidden');
         } else {
-          ind.className = 'w-2 h-2 rounded-full bg-red-500';
-          txt.innerText = 'NOT LOGGED IN';
-          logout.classList.add('hidden');
+          if (ind) ind.className = 'w-2 h-2 rounded-full bg-red-500';
+          if (txt) txt.innerText = 'NOT LOGGED IN';
+          if (logout) logout.classList.add('hidden');
         }
       }
 
       function updateClock() {
         const d = new Date();
-        document.getElementById('current-time').innerText = d.toLocaleString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).toUpperCase();
+        const clock = document.getElementById('current-time');
+        if (clock) {
+          clock.innerText = d.toLocaleString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).toUpperCase();
+        }
       }
 
       // ===== START =====
       (async function() {
+        console.log('🚀 App starting...');
         setupEvents();
         updateClock();
         setInterval(updateClock, 1000);
-        document.getElementById('monitoring_date').value = new Date().toISOString().split('T')[0];
+        
+        const dateInput = document.getElementById('monitoring_date');
+        if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
 
         if (sessionStorage.getItem('ijp_auth') === 'true') isAuth = true;
         updateAuthUI();
@@ -656,9 +818,12 @@
               .on('postgres_changes', { event: '*', schema: 'public', table: 'monitoring_data' }, () => loadAll())
               .on('postgres_changes', { event: '*', schema: 'public', table: 'management_data' }, () => loadAll())
               .subscribe();
+            console.log('✅ Realtime subscription active');
           } catch (e) { console.log('Realtime not available'); }
         }
+        console.log('✅ App ready!');
       })();
+
     })();
   </script>
 

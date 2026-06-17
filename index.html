@@ -1,8 +1,328 @@
-<script>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Monitoring IJP</title>
+
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Chart.js untuk grafik -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- SheetJS untuk export Excel -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+
+    <!-- Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        .font-orbitron { font-family: 'Orbitron', monospace; }
+        body { transition: background-color 0.3s, color 0.3s; }
+        .page { display: none; }
+        #page-dashboard { display: block; }
+        .hidden { display: none !important; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #10b981; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+
+    <!-- CONNECTION STATUS -->
+    <div id="connection-status" class="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 px-6 py-3 rounded-lg shadow-2xl hidden"></div>
+
+    <!-- LOGIN MODAL -->
+    <div id="login-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 w-full max-w-md border border-emerald-500/30">
+            <div class="text-center mb-6">
+                <div class="text-4xl mb-2">🔐</div>
+                <h2 class="text-2xl font-orbitron font-bold text-emerald-600 dark:text-emerald-400">MANAGEMENT ACCESS</h2>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Masukkan password untuk mengakses data management</p>
+            </div>
+            <div class="space-y-4">
+                <input id="login-password" type="password" placeholder="Masukkan Password..." class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-emerald-500 outline-none" />
+                <button id="login-submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition">MASUK</button>
+                <div id="login-error" class="hidden text-center text-red-500 text-sm font-bold">❌ PASSWORD SALAH!</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NAVBAR -->
+    <nav class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center gap-3">
+                    <div class="text-2xl font-orbitron font-black text-emerald-600 dark:text-emerald-400">IJP</div>
+                    <div class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Monitoring</div>
+                </div>
+                <div class="flex items-center gap-2 overflow-x-auto">
+                    <button data-nav="dashboard" class="nav-btn px-4 py-2 rounded-xl text-sm font-bold transition bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">📊 DASHBOARD</button>
+                    <button data-nav="monitoring" class="nav-btn px-4 py-2 rounded-xl text-sm font-bold transition hover:bg-gray-100 dark:hover:bg-gray-700">📝 MONITORING</button>
+                    <button data-nav="management" class="nav-btn px-4 py-2 rounded-xl text-sm font-bold transition hover:bg-gray-100 dark:hover:bg-gray-700">⚙️ MANAGEMENT</button>
+                    <button data-nav="audit" class="nav-btn px-4 py-2 rounded-xl text-sm font-bold transition hover:bg-gray-100 dark:hover:bg-gray-700">📋 AUDIT</button>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-2 text-xs">
+                        <span id="auth-indicator" class="w-2 h-2 rounded-full bg-red-500"></span>
+                        <span id="auth-text" class="font-bold">NOT LOGGED IN</span>
+                    </div>
+                    <button id="logout-btn" class="hidden px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-xs font-bold rounded-lg transition">LOGOUT</button>
+                    <button id="theme-toggle" class="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition text-xl">🌓</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- PAGE: DASHBOARD -->
+        <div id="page-dashboard" class="page">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4 border-l-4 border-emerald-500">
+                    <div class="text-xs uppercase text-gray-400">Total IJP</div>
+                    <div id="stat-total" class="text-3xl font-orbitron font-bold">0</div>
+                </div>
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4 border-l-4 border-blue-500">
+                    <div class="text-xs uppercase text-gray-400">Active Monitoring</div>
+                    <div id="stat-active" class="text-3xl font-orbitron font-bold">0</div>
+                </div>
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4 border-l-4 border-red-500">
+                    <div class="text-xs uppercase text-gray-400">Problems</div>
+                    <div id="stat-problems" class="text-3xl font-orbitron font-bold">0</div>
+                </div>
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4 border-l-4 border-purple-500">
+                    <div class="text-xs uppercase text-gray-400">Lines</div>
+                    <div id="stat-lines" class="text-3xl font-orbitron font-bold">0</div>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4 mb-6">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-sm font-bold uppercase">Problem Ratio</span>
+                    <span id="problem-ratio" class="text-sm font-orbitron">⚖️ 0% : 0%</span>
+                </div>
+                <div class="w-full h-4 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div id="problem-progress-bar" class="h-full bg-red-500 rounded-full" style="width:0%"></div>
+                </div>
+                <div class="flex justify-between text-xs mt-1">
+                    <span id="problem-count" class="text-red-500 font-bold">0 UNIT</span>
+                    <span id="normal-count" class="text-emerald-500 font-bold">0 UNIT</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4">
+                    <h3 class="font-bold mb-2 uppercase text-sm">OP Time per Machine</h3>
+                    <div style="height:220px"><canvas id="monitoring-chart"></canvas></div>
+                </div>
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4">
+                    <h3 class="font-bold mb-2 uppercase text-sm">Problem / Normal</h3>
+                    <div style="height:220px"><canvas id="problem-chart"></canvas></div>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4 mb-6">
+                <h3 class="font-bold uppercase text-sm mb-3">🚨 Critical Alerts</h3>
+                <div id="critical-alerts" class="space-y-2"></div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4 mb-6">
+                <div class="flex flex-wrap items-center gap-4 mb-4">
+                    <h3 class="font-bold uppercase text-sm">📅 Weekly Analysis</h3>
+                    <select id="week_selector" class="px-3 py-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm"></select>
+                    <div class="flex gap-4 text-xs ml-auto">
+                        <span>Total OP: <strong id="weekly-total" class="font-orbitron">0</strong></span>
+                        <span>Entries: <strong id="weekly-entries">0</strong></span>
+                        <span>Avg: <strong id="weekly-avg" class="font-orbitron">0</strong></span>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div style="height:180px"><canvas id="weekly-trend-chart"></canvas></div>
+                    <div style="height:180px"><canvas id="machine-comparison-chart"></canvas></div>
+                </div>
+                <div class="overflow-x-auto mt-4 max-h-48 overflow-y-auto">
+                    <table class="w-full text-xs">
+                        <thead class="bg-gray-100 dark:bg-gray-700 sticky top-0">
+                            <tr><th class="px-2 py-1 text-left">Date</th><th class="px-2 py-1 text-left">Line</th><th class="px-2 py-1 text-left">Serial</th><th class="px-2 py-1 text-left">OP</th><th class="px-2 py-1 text-left">Inc</th><th class="px-2 py-1 text-left">Kondisi</th></tr>
+                        </thead>
+                        <tbody id="weekly-table"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE: MONITORING -->
+        <div id="page-monitoring" class="page hidden">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4 mb-6">
+                <h2 class="text-xl font-orbitron font-bold text-emerald-600 dark:text-emerald-400 mb-4">📝 INPUT MONITORING</h2>
+                <form id="monitoring-form" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase mb-1">Line</label>
+                        <input id="line" type="text" placeholder="LINE 1" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700" required />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase mb-1">Serial Number</label>
+                        <select id="serial_dropdown" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+                            <option value="">-- SELECT --</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase mb-1">Machine</label>
+                        <select id="machine_dropdown" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+                            <option value="">-- SELECT MACHINE --</option>
+                        </select>
+                        <input id="machine" type="hidden" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase mb-1">Monitoring Date</label>
+                        <input id="monitoring_date" type="date" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700" required />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase mb-1">Cumulative OP Time (HRS)</label>
+                        <input id="cumulative_op_time" type="number" step="0.5" placeholder="0" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700" required />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase mb-1">IJP Condition</label>
+                        <select id="ijp_condition" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+                            <option value="OK">OK</option>
+                            <option value="NG">NG</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase mb-1">Problem Exists</label>
+                        <select id="problem_exists" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+                            <option value="TIDAK ADA">TIDAK ADA</option>
+                            <option value="ADA">ADA</option>
+                        </select>
+                    </div>
+                    <div id="problem-section" class="hidden md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold uppercase mb-1">Problem Description</label>
+                            <input id="problem_description" type="text" placeholder="Deskripsi masalah" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700" />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase mb-1">Problem Action</label>
+                            <input id="problem_action" type="text" placeholder="Tindakan" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700" />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase mb-1">Photo</label>
+                            <input id="photo_upload" type="file" accept="image/*" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700" />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase mb-1">Notes</label>
+                        <input id="notes" type="text" placeholder="Catatan" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700" />
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <label class="flex items-center gap-2 text-sm">
+                            <input id="filter_replaced" type="checkbox" /> Filter Replaced?
+                        </label>
+                    </div>
+                    <div class="md:col-span-3 flex gap-3">
+                        <button type="submit" class="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg transition">💾 SIMPAN</button>
+                        <button type="reset" class="px-6 py-2 bg-gray-500 hover:bg-gray-600 text-white font-bold rounded-lg transition">↺ RESET</button>
+                    </div>
+                </form>
+                <div id="form-success" class="hidden mt-3 p-3 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg text-center"></div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4">
+                <div class="flex flex-wrap items-center gap-3 mb-4">
+                    <h3 class="font-bold uppercase text-sm">📋 Monitoring Data</h3>
+                    <select id="line-filter" class="px-3 py-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm">
+                        <option value="ALL">SEMUA LINE</option>
+                    </select>
+                    <select id="status-filter" class="px-3 py-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm">
+                        <option value="ALL">SEMUA STATUS</option>
+                        <option value="NORMAL">NORMAL</option>
+                        <option value="WARNING">WARNING</option>
+                        <option value="CRITICAL">CRITICAL</option>
+                    </select>
+                    <button id="reset-filters" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded-lg text-xs font-bold">↺ RESET</button>
+                    <span id="filtered-count" class="text-xs text-gray-400 ml-auto">0/0</span>
+                    <button id="export-monitoring" class="px-3 py-1 bg-emerald-600 text-white rounded-lg text-xs font-bold">📥 EXPORT</button>
+                </div>
+                <div class="overflow-x-auto max-h-96 overflow-y-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-100 dark:bg-gray-700 sticky top-0">
+                            <tr><th class="px-3 py-2 text-left">LINE</th><th class="px-3 py-2 text-left">SERIAL</th><th class="px-3 py-2 text-left">MACHINE</th><th class="px-3 py-2 text-left">OP</th><th class="px-3 py-2 text-left">KONDISI</th><th class="px-3 py-2 text-left">PROBLEM</th><th class="px-3 py-2 text-left">STATUS</th></tr>
+                        </thead>
+                        <tbody id="monitoring-table"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE: MANAGEMENT -->
+        <div id="page-management" class="page hidden">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4 mb-6">
+                <h2 class="text-xl font-orbitron font-bold text-emerald-600 dark:text-emerald-400 mb-4">⚙️ REGISTER IJP MACHINE</h2>
+                <form id="management-form" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase mb-1">Machine Name</label>
+                        <input id="machine_name" type="text" placeholder="MACHINE A" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700" required />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase mb-1">Line</label>
+                        <input id="line_mg" type="text" placeholder="LINE 1" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700" required />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase mb-1">Serial Number</label>
+                        <input id="service" type="text" placeholder="SERIAL" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700" required />
+                    </div>
+                    <div class="md:col-span-3 flex gap-3">
+                        <button type="submit" class="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg transition">💾 REGISTER</button>
+                    </div>
+                </form>
+                <div id="management-success" class="hidden mt-3 p-3 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg text-center"></div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold uppercase text-sm">📋 Registered IJP</h3>
+                    <button id="export-management" class="px-3 py-1 bg-emerald-600 text-white rounded-lg text-xs font-bold">📥 EXPORT</button>
+                </div>
+                <div class="overflow-x-auto max-h-96 overflow-y-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-100 dark:bg-gray-700 sticky top-0">
+                            <tr><th class="px-3 py-2 text-left">MACHINE</th><th class="px-3 py-2 text-left">LINE</th><th class="px-3 py-2 text-left">SERIAL</th><th class="px-3 py-2 text-left">ACTION</th></tr>
+                        </thead>
+                        <tbody id="management-table"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE: AUDIT -->
+        <div id="page-audit" class="page hidden">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-4">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold uppercase text-sm">📋 Audit Logs <span id="audit-count" class="text-xs text-gray-400 ml-2">0 RECORDS</span></h3>
+                    <button id="export-audit" class="px-3 py-1 bg-emerald-600 text-white rounded-lg text-xs font-bold">📥 EXPORT</button>
+                </div>
+                <div class="overflow-x-auto max-h-96 overflow-y-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-100 dark:bg-gray-700 sticky top-0">
+                            <tr><th class="px-3 py-2 text-left">TIMESTAMP</th><th class="px-3 py-2 text-left">ACTION</th><th class="px-3 py-2 text-left">DETAILS</th></tr>
+                        </thead>
+                        <tbody id="audit-table"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- JAVASCRIPT LENGKAP (BAGIAN 2 - LANJUTAN) -->
+    <!-- ============================================================ -->
+  <script>
   (function(){
-    // ============================================================
-    // KONFIGURASI SUPABASE (TETAP PAKE DATA LO)
-    // ============================================================
+    // KONFIGURASI SUPABASE
     const SUPABASE_URL = 'https://okdvksrprvhgqdyioryf.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rZHZrc3JwcnZoZ3FkeWlvcnlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5Mjc5OTYsImV4cCI6MjA4NjUwMzk5Nn0.cfrGXxCgbPWpEdhBGC6RP8JonSTCjN1d6IOr4qyXSQw';
 
@@ -20,9 +340,7 @@
     let retryCount = 0;
     const MAX_RETRY = 3;
 
-    // ============================================================
     // INISIALISASI SUPABASE
-    // ============================================================
     async function initSupabase() {
       try {
         if (window.supabase && window.supabase.createClient) {
@@ -56,9 +374,7 @@
       }
     }
 
-    // ============================================================
     // LOAD DATA
-    // ============================================================
     async function loadAll() {
       if (!supabase) {
         console.log('Waiting for Supabase...');
@@ -88,8 +404,7 @@
         updateFormDropdowns();
         updateLineFilter();
         updateMonitoringTable();
-        if (isAuth) { updateMgmtTable();
-          updateAuditTable(); }
+        if (isAuth) { updateMgmtTable(); updateAuditTable(); }
         updateCriticalAlerts();
         populateWeekSelector();
 
@@ -109,9 +424,7 @@
       return 'NORMAL';
     }
 
-    // ============================================================
-    // UI UPDATES (SEMUA PAKE NULL CHECK)
-    // ============================================================
+    // UI UPDATES
     function updateDashboardUI() {
       const mon = allData.filter(d => d.table_type === 'monitoring');
       const mgmt = allData.filter(d => d.table_type === 'management');
@@ -193,8 +506,7 @@
       }
       
       tbody.innerHTML = data.slice(0, 20).map(item => {
-        let op = item.cumulative_op_time || 0,
-          st = getStatus(op);
+        let op = item.cumulative_op_time || 0, st = getStatus(op);
         let stClass = st === 'CRITICAL' ? 'bg-red-100 text-red-700' : (st === 'WARNING' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700');
         return `<tr class="border-b hover:bg-gray-50 dark:hover:bg-gray-700/50">
           <td class="px-4 py-2 font-bold uppercase">${item.line || '-'}</td>
@@ -270,8 +582,7 @@
       }
 
       let machMap = {};
-      data.forEach(d => { let m = d.machine || 'UNKNOWN';
-        machMap[m] = (machMap[m] || 0) + (d.cumulative_op_time || 0); });
+      data.forEach(d => { let m = d.machine || 'UNKNOWN'; machMap[m] = (machMap[m] || 0) + (d.cumulative_op_time || 0); });
       if (machineComp) machineComp.destroy();
       const compCtx = document.getElementById('machine-comparison-chart')?.getContext('2d');
       if (compCtx) {
@@ -384,9 +695,7 @@
       if (supabase) await supabase.from('audit_logs').insert([{ user_action: action, activity: details }]);
     }
 
-    // ============================================================
     // SETUP EVENTS (DENGAN NULL CHECK)
-    // ============================================================
     function setupEvents() {
       const el = (id) => document.getElementById(id);
       
@@ -716,9 +1025,7 @@
       }
     }
 
-    // ============================================================
     // HELPER FUNCTIONS
-    // ============================================================
     function showPage(page) {
       document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
       const target = document.getElementById(`page-${page}`);
@@ -757,9 +1064,7 @@
       }
     }
 
-    // ============================================================
     // INIT
-    // ============================================================
     (async function() {
       setupEvents();
       updateClock();
@@ -789,3 +1094,6 @@
 
   })();
 </script>
+
+</body>
+</html>

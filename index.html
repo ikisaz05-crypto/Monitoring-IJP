@@ -303,15 +303,10 @@
          <label for="problem_action" class="block text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase mb-1">ACTION / SOLUSI</label>
          <textarea id="problem_action" name="problem_action" rows="2" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all resize-none" placeholder="TINDAKAN YANG DIAMBIL..."></textarea>
         </div>
+        <!-- BAGIAN UPLOAD FOTO DINONAKTIFKAN -->
         <div class="pt-3 border-t border-gray-300 dark:border-gray-600">
-         <label for="photo_upload" class="block text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase mb-1">📸 UPLOAD FOTO (MAX 5MB)</label>
-         <div class="flex items-center gap-3">
-          <input type="file" id="photo_upload" name="photo_upload" accept="image/*" class="flex-1 text-sm px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-bold file:bg-emerald-500 file:text-white hover:file:bg-emerald-600">
-          <div id="photo-preview" class="hidden w-16 h-16 rounded-lg overflow-hidden border-2 border-emerald-400 shadow-lg flex-shrink-0">
-           <img id="preview-img" src="" alt="Preview" class="w-full h-full object-cover">
-          </div>
-         </div>
-         <p id="photo-filename" class="text-[8px] text-gray-500 dark:text-gray-400 uppercase mt-1">NO FILE SELECTED</p>
+         <p class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase">📸 UPLOAD FOTO: <span class="text-emerald-500">DINONAKTIFKAN</span></p>
+         <p class="text-[8px] text-gray-400 dark:text-gray-500 uppercase mt-1">FOTO TIDAK PERLU DIUPLOAD, DATA TETAP TERSIMPAN</p>
         </div>
        </div>
        <div>
@@ -625,7 +620,6 @@
       const loginError = document.getElementById('login-error')
       const logoutBtn = document.getElementById('logout-btn')
       
-      // Check stored auth
       if (storage.getItem('ijp_auth') === 'true') {
         isAuthenticated = true
         updateAuthUI()
@@ -640,14 +634,9 @@
           loginError.classList.add('hidden')
           updateAuthUI()
           document.getElementById('security-notif').classList.add('hidden')
-          
-          // Refresh protected data
-          updateManagementTable()
-          updateAuditTable()
         } else {
           loginError.classList.remove('hidden')
           passwordInput.value = ''
-          passwordInput.focus()
         }
       })
 
@@ -694,32 +683,15 @@
 
     // ===== AUTO LOCK =====
     function setupAutoLock() {
-      let blurTimer = null
-      
       document.addEventListener('visibilitychange', () => {
-        if (document.hidden && isAuthenticated) {
-          blurTimer = setTimeout(() => {
-            if (document.hidden && isAuthenticated) {
-              forceLogout('TAB SWITCH')
-            }
-          }, 3000)
-        } else if (!document.hidden) {
-          clearTimeout(blurTimer)
-        }
+        if (document.hidden && isAuthenticated) forceLogout('TAB SWITCH')
       })
-      
       window.addEventListener('blur', () => {
         if (isAuthenticated) {
-          blurTimer = setTimeout(() => {
-            if (!document.hasFocus() && isAuthenticated) {
-              forceLogout('WINDOW BLUR')
-            }
+          setTimeout(() => {
+            if (!document.hasFocus() && isAuthenticated) forceLogout('WINDOW BLUR')
           }, 5000)
         }
-      })
-      
-      window.addEventListener('focus', () => {
-        clearTimeout(blurTimer)
       })
     }
 
@@ -752,7 +724,6 @@
       document.getElementById('monitoring_date').value = new Date().toISOString().split('T')[0]
       await loadAllData()
       subscribeToChanges()
-      // Tampilkan dashboard default
       const dashboardBtn = document.querySelector('[data-nav="dashboard"]')
       if (dashboardBtn) updateNavButtons(dashboardBtn)
     }
@@ -898,16 +869,14 @@
       })
       const ctx = canvas.getContext('2d')
       if (machineComparisonChart) machineComparisonChart.destroy()
-      const labels = Object.keys(machineData).sort()
-      const colors = ['#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6']
       machineComparisonChart = new Chart(ctx, {
         type: 'bar',
         data: {
-          labels: labels,
+          labels: Object.keys(machineData).sort(),
           datasets: [{
             label: 'TOTAL OP TIME (HRS)',
-            data: labels.map(l => machineData[l]),
-            backgroundColor: labels.map((_, i) => colors[i % colors.length]),
+            data: Object.values(machineData),
+            backgroundColor: ['#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
             borderRadius: 4
           }]
         },
@@ -942,11 +911,7 @@
       document.getElementById('stat-total').textContent = mgData.length
       document.getElementById('stat-active').textContent = monitoringData.length
       document.getElementById('stat-problems').textContent = monitoringData.filter(d => d.problem_exists === 'ADA').length
-      
-      // Count unique lines
-      const uniqueLines = new Set(monitoringData.map(d => d.line))
-      document.getElementById('stat-lines').textContent = uniqueLines.size
-      
+      document.getElementById('stat-lines').textContent = new Set(monitoringData.map(d => d.line)).size
       updateMonitoringChart(monitoringData)
       updateProblemChart(monitoringData)
     }
@@ -954,43 +919,22 @@
     function updateMonitoringChart(monitoringData) {
       const canvas = document.getElementById('monitoring-chart')
       if (!canvas) return
-      
-      // Group by machine and get latest op time
-      const machineMap = {}
-      monitoringData.forEach(d => {
-        const key = d.machine || 'UNKNOWN'
-        if (!machineMap[key] || new Date(d.monitoring_date) > new Date(machineMap[key].monitoring_date)) {
-          machineMap[key] = d
-        }
-      })
-      
-      const data = Object.values(machineMap)
-        .sort((a, b) => (a.cumulative_op_time || 0) - (b.cumulative_op_time || 0))
-      
+      const data = monitoringData.map(d => ({ machine: d.machine || 'UNKNOWN', opTime: d.cumulative_op_time || 0 }))
+        .sort((a, b) => a.opTime - b.opTime)
       const ctx = canvas.getContext('2d')
       if (chartInstance) chartInstance.destroy()
-      
       chartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
-          labels: data.map(d => d.machine || 'UNKNOWN'),
+          labels: data.map(d => d.machine),
           datasets: [{
             label: 'OP TIME (HRS)',
-            data: data.map(d => d.cumulative_op_time || 0),
-            backgroundColor: data.map(d => {
-              const op = d.cumulative_op_time || 0
-              return op >= 15000 ? '#ef4444' : op >= 10000 ? '#f59e0b' : '#10b981'
-            }),
+            data: data.map(d => d.opTime),
+            backgroundColor: data.map(d => d.opTime >= 15000 ? '#ef4444' : d.opTime >= 10000 ? '#f59e0b' : '#10b981'),
             borderRadius: 4
           }]
         },
-        options: { 
-          responsive: true, 
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false }
-          }
-        }
+        options: { responsive: true, maintainAspectRatio: false }
       })
     }
 
@@ -999,18 +943,11 @@
       if (!canvas) return
       const ada = monitoringData.filter(d => d.problem_exists === 'ADA').length
       const tidak = monitoringData.filter(d => d.problem_exists === 'TIDAK ADA').length
-      const kosong = monitoringData.filter(d => !d.problem_exists || d.problem_exists === '').length
       const ctx = canvas.getContext('2d')
       if (problemChartInstance) problemChartInstance.destroy()
       problemChartInstance = new Chart(ctx, {
         type: 'doughnut',
-        data: { 
-          labels: ['PROBLEM FOUND', 'NORMAL', 'NO DATA'], 
-          datasets: [{ 
-            data: [ada, tidak, kosong], 
-            backgroundColor: ['#ef4444', '#10b981', '#94a3b8'] 
-          }] 
-        },
+        data: { labels: ['PROBLEM FOUND', 'NORMAL'], datasets: [{ data: [ada, tidak], backgroundColor: ['#ef4444', '#10b981'] }] },
         options: { responsive: true, maintainAspectRatio: false }
       })
     }
@@ -1018,36 +955,24 @@
     function updateCriticalAlerts() {
       const container = document.getElementById('critical-alerts')
       const data = allData.filter(d => d.table_type === 'monitoring')
-      
-      // Get latest per machine
-      const latestPerMachine = {}
-      data.forEach(d => {
-        const key = d.machine || d.serial_number || 'UNKNOWN'
-        if (!latestPerMachine[key] || new Date(d.monitoring_date) > new Date(latestPerMachine[key].monitoring_date)) {
-          latestPerMachine[key] = d
-        }
-      })
-      
-      const latestData = Object.values(latestPerMachine)
-      const critical = latestData.filter(d => (d.cumulative_op_time || 0) >= 15000)
-      const warning = latestData.filter(d => (d.cumulative_op_time || 0) >= 10000 && (d.cumulative_op_time || 0) < 15000)
-      
+      const critical = data.filter(d => d.cumulative_op_time >= 15000)
+      const warning = data.filter(d => d.cumulative_op_time >= 10000 && d.cumulative_op_time < 15000)
       let html = ''
       critical.forEach(item => {
         html += `<div class="bg-red-50 dark:bg-red-900/20 border-2 border-red-500 rounded-xl p-3 mb-3"><div class="flex items-start gap-2">
           <div class="text-2xl critical-pulse">🚨</div>
           <div><h3 class="font-orbitron font-bold text-red-700 dark:text-red-400 text-sm uppercase">CRITICAL - SERVICE REQUIRED</h3>
-          <p class="text-red-600 dark:text-red-300 text-xs uppercase"><strong>LINE:</strong> ${item.line || '-'} | <strong>SERIAL:</strong> ${item.serial_number || '-'} | <strong>OP TIME:</strong> ${item.cumulative_op_time || 0} HRS</p></div>
+          <p class="text-red-600 dark:text-red-300 text-xs uppercase"><strong>LINE:</strong> ${item.line || '-'} | <strong>SERIAL:</strong> ${item.serial_number} | <strong>OP TIME:</strong> ${item.cumulative_op_time} HRS</p></div>
         </div></div>`
       })
       warning.forEach(item => {
         html += `<div class="bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-500 rounded-xl p-3 mb-3"><div class="flex items-start gap-2">
           <div class="text-2xl blink-warning">⚠️</div>
           <div><h3 class="font-orbitron font-bold text-amber-700 dark:text-amber-400 text-sm uppercase">WARNING - REPLACEMENT NEEDED</h3>
-          <p class="text-amber-600 dark:text-amber-300 text-xs uppercase"><strong>LINE:</strong> ${item.line || '-'} | <strong>SERIAL:</strong> ${item.serial_number || '-'} | <strong>OP TIME:</strong> ${item.cumulative_op_time || 0} HRS</p></div>
+          <p class="text-amber-600 dark:text-amber-300 text-xs uppercase"><strong>LINE:</strong> ${item.line || '-'} | <strong>SERIAL:</strong> ${item.serial_number} | <strong>OP TIME:</strong> ${item.cumulative_op_time} HRS</p></div>
         </div></div>`
       })
-      container.innerHTML = html || '<p class="text-emerald-600 dark:text-emerald-400 text-sm font-bold uppercase">✅ ALL IJP UNITS IN NORMAL CONDITION</p>'
+      container.innerHTML = html
     }
 
     function updateMonitoringTable() {
@@ -1099,7 +1024,7 @@
       const data = allData.filter(d => d.table_type === 'audit').sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
       document.getElementById('audit-count').textContent = `${data.length} RECORDS`
       if (!data.length) { tbody.innerHTML = '<tr><td colspan="3" class="px-3 py-6 text-center text-gray-500 dark:text-gray-400 uppercase text-[10px]">NO ACTIVITY</td></tr>'; return }
-      tbody.innerHTML = data.slice(0, 50).map(item => `
+      tbody.innerHTML = data.map(item => `
         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
           <td class="px-3 py-2 text-[10px] font-mono text-gray-600 dark:text-gray-400">${new Date(item.created_at).toLocaleString()}</td>
           <td class="px-3 py-2"><span class="px-2 py-0.5 text-[9px] font-bold bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400 rounded uppercase">${item.user_action || '-'}</span></td>
@@ -1111,37 +1036,10 @@
     // ===== FORMS =====
     function setupForms() {
       const problemSection = document.getElementById('problem-section')
-      
-      document.getElementById('photo_upload').addEventListener('change', (e) => {
-        const file = e.target.files[0]
-        const preview = document.getElementById('photo-preview')
-        const filename = document.getElementById('photo-filename')
-        if (file) {
-          if (file.size > 5 * 1024 * 1024) { 
-            filename.textContent = 'ERROR: FILE TOO BIG (MAX 5MB)'
-            filename.classList.add('text-red-500')
-            preview.classList.add('hidden')
-            return 
-          }
-          filename.classList.remove('text-red-500')
-          const reader = new FileReader()
-          reader.onload = (ev) => {
-            document.getElementById('preview-img').src = ev.target.result
-            preview.classList.remove('hidden')
-            filename.textContent = `📎 ${file.name} (${(file.size / 1024).toFixed(1)} KB)`
-          }
-          reader.readAsDataURL(file)
-        } else { 
-          preview.classList.add('hidden'); 
-          filename.textContent = 'NO FILE SELECTED';
-          filename.classList.remove('text-red-500')
-        }
-      })
 
       document.getElementById('problem_exists').addEventListener('change', function() {
         if (this.value === 'ADA') {
           problemSection.classList.remove('hidden')
-          // Set required fields
           document.getElementById('problem_description').required = true
           document.getElementById('problem_action').required = true
         } else {
@@ -1150,10 +1048,6 @@
           document.getElementById('problem_action').value = ''
           document.getElementById('problem_description').required = false
           document.getElementById('problem_action').required = false
-          document.getElementById('photo_upload').value = ''
-          document.getElementById('photo-preview').classList.add('hidden')
-          document.getElementById('photo-filename').textContent = 'NO FILE SELECTED'
-          document.getElementById('photo-filename').classList.remove('text-red-500')
         }
       })
 
@@ -1196,17 +1090,12 @@
         }
       })
 
-      // Reset form handler
       document.getElementById('reset-form').addEventListener('click', function(e) {
         e.preventDefault()
         document.getElementById('monitoring-form').reset()
         problemSection.classList.add('hidden')
-        document.getElementById('photo-preview').classList.add('hidden')
-        document.getElementById('photo-filename').textContent = 'NO FILE SELECTED'
-        document.getElementById('photo-filename').classList.remove('text-red-500')
         document.getElementById('monitoring_date').value = new Date().toISOString().split('T')[0]
         document.getElementById('form-success').classList.add('hidden')
-        // Reset dropdowns
         const machineDropdown = document.getElementById('machine_dropdown')
         machineDropdown.value = ''
         machineDropdown.dispatchEvent(new Event('change'))
@@ -1214,42 +1103,48 @@
 
       document.getElementById('monitoring-form').addEventListener('submit', async (e) => {
         e.preventDefault()
+        
+        const problemExists = document.getElementById('problem_exists').value
+        const problemDesc = document.getElementById('problem_description').value.trim()
+        const problemAction = document.getElementById('problem_action').value.trim()
+        
+        if (problemExists === 'ADA') {
+          if (!problemDesc) {
+            showFormMessage('form-success', '❌ DESKRIPSI PROBLEM WAJIB DIISI!', true)
+            document.getElementById('problem_description').focus()
+            return
+          }
+          if (!problemAction) {
+            showFormMessage('form-success', '❌ ACTION / SOLUSI WAJIB DIISI!', true)
+            document.getElementById('problem_action').focus()
+            return
+          }
+        }
+        
         const btn = document.getElementById('submit-monitoring')
         btn.disabled = true; 
         btn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> SUBMITTING...'
         try {
-          let photoUrl = ''
-          const photoFile = document.getElementById('photo_upload').files[0]
           const filterReplaced = document.getElementById('filter_replaced').checked
           let finalOpTime = parseInt(document.getElementById('cumulative_op_time').value) || 0
-          
-          // Upload photo if exists and problem exists
-          if (photoFile && document.getElementById('problem_exists').value === 'ADA') {
-            const safeName = `${Date.now()}-${photoFile.name.replace(/[^a-zA-Z0-9.-]/g, '_').slice(-50)}`
-            const { error: uploadError } = await supabase.storage.from('ijp_monitoring').upload(`ijp-photos/${safeName}`, photoFile)
-            if (uploadError) {
-              console.warn('Photo upload failed:', uploadError)
-            } else {
-              const { data } = supabase.storage.from('ijp_monitoring').getPublicUrl(`ijp-photos/${safeName}`)
-              photoUrl = data.publicUrl
-            }
-          }
-          
           if (filterReplaced) finalOpTime = 0
+          
+          const serialNumber = document.getElementById('serial_dropdown').value.toUpperCase()
+          const machineName = document.getElementById('machine').value.toUpperCase()
           
           const formData = {
             line: document.getElementById('line').value.toUpperCase() || '',
-            serial_number: document.getElementById('serial_dropdown').value.toUpperCase(),
-            machine: document.getElementById('machine').value.toUpperCase(),
+            serial_number: serialNumber,
+            machine: machineName,
             monitoring_date: document.getElementById('monitoring_date').value,
             cumulative_op_time: finalOpTime,
             weekly_increment: 0,
             ijp_condition: document.getElementById('ijp_condition').value.toUpperCase(),
-            problem_exists: document.getElementById('problem_exists').value.toUpperCase(),
-            problem_description: document.getElementById('problem_description').value || '',
-            problem_action: document.getElementById('problem_action').value || '',
+            problem_exists: problemExists,
+            problem_description: problemDesc,
+            problem_action: problemAction,
             notes: document.getElementById('notes').value || '',
-            photo_url: photoUrl,
+            photo_url: '', // TANPA FOTO
             filter_replaced: filterReplaced
           }
           
@@ -1258,12 +1153,10 @@
           
           document.getElementById('monitoring-form').reset()
           problemSection.classList.add('hidden')
-          document.getElementById('photo-preview').classList.add('hidden')
-          document.getElementById('photo-filename').textContent = 'NO FILE SELECTED'
-          document.getElementById('photo-filename').classList.remove('text-red-500')
           document.getElementById('monitoring_date').value = new Date().toISOString().split('T')[0]
-          showFormMessage('form-success', '✓ DATA SUBMITTED SUCCESSFULLY!')
-          await logAudit('MONITORING ADDED', `SERIAL: ${formData.serial_number}, LINE: ${formData.line}`)
+          showFormMessage('form-success', '✅ DATA SUBMITTED SUCCESSFULLY!')
+          await logAudit('MONITORING ADDED', `SERIAL: ${serialNumber}, LINE: ${formData.line}`)
+          await loadAllData()
         } catch (error) {
           console.error('Submit error:', error)
           showFormMessage('form-success', `❌ ERROR: ${error.message}`, true)
@@ -1299,8 +1192,9 @@
           const { error } = await supabase.from('management_data').insert([formData])
           if (error) throw error
           document.getElementById('management-form').reset()
-          showFormMessage('management-success', '✓ DATA UPLOADED SUCCESSFULLY!')
+          showFormMessage('management-success', '✅ DATA UPLOADED SUCCESSFULLY!')
           await logAudit('IJP REGISTERED', `MACHINE: ${formData.machine_name}, SERIAL: ${formData.serial_number}`)
+          await loadAllData()
         } catch (error) {
           console.error('Management submit error:', error)
           showFormMessage('management-success', `❌ ERROR: ${error.message}`, true)
@@ -1315,7 +1209,6 @@
       const el = document.getElementById(id)
       el.innerHTML = `<p class="${isError ? 'text-red-700 dark:text-red-400' : 'text-emerald-700 dark:text-emerald-400'} font-semibold uppercase text-sm">${msg}</p>`
       el.classList.remove('hidden')
-      // Auto hide after 5 seconds
       clearTimeout(el._timeout)
       el._timeout = setTimeout(() => el.classList.add('hidden'), 5000)
     }
@@ -1339,7 +1232,8 @@
           await logAudit('RECORD DELETED', `ID: ${deleteTarget.id}`)
           document.getElementById('delete-modal').classList.add('hidden')
           deleteTarget = null
-          showFormMessage('management-success', '✓ RECORD DELETED!')
+          showFormMessage('management-success', '✅ RECORD DELETED!')
+          await loadAllData()
         } catch (error) {
           console.error('Delete error:', error)
           showFormMessage('management-success', `❌ ERROR: ${error.message}`, true)
@@ -1482,7 +1376,8 @@
         if (error) throw error
         input.dataset.original = newSerial
         await logAudit('SERIAL UPDATED', `ID: ${id}, NEW: ${newSerial}`)
-        showFormMessage('management-success', '✓ SERIAL UPDATED!')
+        showFormMessage('management-success', '✅ SERIAL UPDATED!')
+        await loadAllData()
       } catch (error) {
         console.error('Update serial error:', error)
         input.value = original
@@ -1493,7 +1388,6 @@
     }
 
     // ===== START =====
-    // Wait for DOM to be ready
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', init)
     } else {

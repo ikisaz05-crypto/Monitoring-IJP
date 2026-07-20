@@ -1,13 +1,19 @@
 <!doctype html>
 <html lang="en" class="h-full">
- <head>
+<head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>IJP MONITORING SYSTEM - WEEKLY TRACKING</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.38.0/+esm" type="importmap"></script>
+  <script type="importmap">
+    {
+      "imports": {
+        "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.38.0"
+      }
+    }
+  </script>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&amp;family=Rajdhani:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
   <script>
     tailwind.config = {
@@ -43,8 +49,8 @@
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
     ::-webkit-scrollbar-thumb { background: #00ff88; border-radius: 3px; }
-    #login-modal { backdrop-filter: blur(8px); }
-    .login-card { animation: slideIn 0.3s ease-out; }
+    #login-modal, #edit-modal { backdrop-filter: blur(8px); }
+    .login-card, .edit-card { animation: slideIn 0.3s ease-out; }
     @keyframes slideIn { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
     .security-notif { animation: slideDown 0.3s ease-out; }
     @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
@@ -56,9 +62,29 @@
     .nav-btn:hover { transform: translateY(-1px); }
     .page { display: block; }
     .page.hidden { display: none !important; }
+    .serial-edit-input:focus { outline: 2px solid #10b981; outline-offset: 1px; }
+    .filter-select {
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      padding-right: 30px;
+    }
+    /* Auto caps lock via CSS */
+    .auto-upper { text-transform: uppercase; }
+    .auto-upper::placeholder { text-transform: none; }
+    /* Chart blink effect untuk critical */
+    .chart-critical-bar {
+      animation: chartBlink 1.2s ease-in-out infinite;
+    }
+    @keyframes chartBlink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
   </style>
- </head>
- <body class="h-full font-rajdhani bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
+</head>
+<body class="h-full font-rajdhani bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
   <div id="app" class="h-full w-full flex flex-col overflow-auto">
    <!-- Header -->
    <header class="bg-white dark:bg-gray-800 shadow-lg border-b-2 border-emerald-500 px-4 py-3 flex-shrink-0">
@@ -141,7 +167,26 @@
        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg> EXPORT 
       </button>
      </div>
-     <div id="critical-alerts" class="mb-4"></div>
+     
+     <!-- Filter Line untuk Stats -->
+     <div class="mb-4 flex flex-wrap items-center gap-3">
+      <div class="flex items-center gap-2">
+        <label class="text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase">Filter Line:</label>
+        <select id="dashboard-line-filter" class="filter-select px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all">
+          <option value="ALL">ALL LINES</option>
+          <option value="LINE01">LINE01</option>
+          <option value="LINE02">LINE02</option>
+          <option value="LINE03">LINE03</option>
+          <option value="LINE04">LINE04</option>
+          <option value="LINE05">LINE05</option>
+          <option value="LINE06">LINE06</option>
+          <option value="LINE09">LINE09</option>
+        </select>
+      </div>
+      <span id="filtered-count" class="text-[10px] text-gray-500 dark:text-gray-400">Showing: 0 units</span>
+     </div>
+     
+     <!-- Stats Cards -->
      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
       <div class="card-gradient bg-white dark:bg-gray-800 rounded-xl p-3 border border-emerald-200 dark:border-emerald-800 shadow-lg">
        <div class="flex items-center justify-between mb-2">
@@ -184,11 +229,14 @@
        <p class="text-[9px] text-gray-500 dark:text-gray-400 uppercase mt-0.5">ACTIVE ISSUES</p>
       </div>
      </div>
+     
+     <!-- Charts Grid -->
      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+      <!-- Pareto OP Time Chart -->
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
        <div class="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
-        <h3 class="font-orbitron font-bold text-sm text-gray-800 dark:text-white uppercase">OP TIME CHART</h3>
-        <p class="text-[8px] text-gray-500 dark:text-gray-400 uppercase">⚠️ WARNING: 5000 HRS | 🔴 CRITICAL: 10000 HRS</p>
+        <h3 class="font-orbitron font-bold text-sm text-gray-800 dark:text-white uppercase">📊 PARETO OP TIME IJP</h3>
+        <p class="text-[8px] text-gray-500 dark:text-gray-400 uppercase">⚠️ WARNING: ≥10000 HRS | 🔴 CRITICAL: ≥15000 HRS</p>
        </div>
        <div class="p-3">
         <div style="position: relative; height: 250px; width: 100%;">
@@ -208,14 +256,30 @@
        </div>
       </div>
      </div>
+     
+     <!-- Monitoring Table dengan Filter Line -->
      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-      <div class="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+      <div class="px-4 py-2 border-b border-gray-200 dark:border-gray-700 flex flex-wrap items-center justify-between gap-2">
        <h3 class="font-orbitron font-bold text-sm text-gray-800 dark:text-white uppercase">MONITORING DATA</h3>
+       <div class="flex items-center gap-2">
+        <label class="text-[9px] font-bold text-gray-600 dark:text-gray-400 uppercase">Filter Line:</label>
+        <select id="monitoring-line-filter" class="filter-select px-2 py-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-xs focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all">
+          <option value="ALL">ALL</option>
+          <option value="LINE01">LINE01</option>
+          <option value="LINE02">LINE02</option>
+          <option value="LINE03">LINE03</option>
+          <option value="LINE04">LINE04</option>
+          <option value="LINE05">LINE05</option>
+          <option value="LINE06">LINE06</option>
+          <option value="LINE09">LINE09</option>
+        </select>
+       </div>
       </div>
       <div class="overflow-x-auto">
        <table class="w-full text-[11px]">
         <thead class="bg-gray-50 dark:bg-gray-900">
          <tr>
+          <th class="px-3 py-2 text-left text-[9px] font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">NO</th>
           <th class="px-3 py-2 text-left text-[9px] font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">LINE</th>
           <th class="px-3 py-2 text-left text-[9px] font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">SERIAL</th>
           <th class="px-3 py-2 text-left text-[9px] font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">MACHINE</th>
@@ -226,7 +290,7 @@
          </tr>
         </thead>
         <tbody id="monitoring-table" class="divide-y divide-gray-200 dark:divide-gray-700">
-         <tr><td colspan="7" class="px-3 py-6 text-center text-gray-500 dark:text-gray-400 uppercase text-[10px]">NO MONITORING DATA</td></tr>
+         <tr><td colspan="8" class="px-3 py-6 text-center text-gray-500 dark:text-gray-400 uppercase text-[10px]">NO MONITORING DATA</td></tr>
         </tbody>
        </table>
       </div>
@@ -303,10 +367,15 @@
          <label for="problem_action" class="block text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase mb-1">ACTION / SOLUSI</label>
          <textarea id="problem_action" name="problem_action" rows="2" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all resize-none" placeholder="TINDAKAN YANG DIAMBIL..."></textarea>
         </div>
-        <!-- BAGIAN UPLOAD FOTO DINONAKTIFKAN -->
         <div class="pt-3 border-t border-gray-300 dark:border-gray-600">
-         <p class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase">📸 UPLOAD FOTO: <span class="text-emerald-500">DINONAKTIFKAN</span></p>
-         <p class="text-[8px] text-gray-400 dark:text-gray-500 uppercase mt-1">FOTO TIDAK PERLU DIUPLOAD, DATA TETAP TERSIMPAN</p>
+         <label for="photo_upload" class="block text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase mb-1">📸 UPLOAD FOTO (MAX 5MB)</label>
+         <div class="flex items-center gap-3">
+          <input type="file" id="photo_upload" name="photo_upload" accept="image/*" class="flex-1 text-sm px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-bold file:bg-emerald-500 file:text-white hover:file:bg-emerald-600">
+          <div id="photo-preview" class="hidden w-16 h-16 rounded-lg overflow-hidden border-2 border-emerald-400 shadow-lg flex-shrink-0">
+           <img id="preview-img" src="" alt="Preview" class="w-full h-full object-cover">
+          </div>
+         </div>
+         <p id="photo-filename" class="text-[8px] text-gray-500 dark:text-gray-400 uppercase mt-1">NO FILE SELECTED</p>
         </div>
        </div>
        <div>
@@ -425,25 +494,41 @@
        <h2 class="font-orbitron font-bold text-xl text-gray-800 dark:text-white uppercase mb-1">MANAGEMENT</h2>
        <p class="text-gray-500 dark:text-gray-400 uppercase text-[10px] tracking-wide">UPLOAD &amp; MANAGE IJP DATA</p>
       </div>
-      <button id="export-management" class="flex items-center gap-1.5 px-3 py-1.5 bg-green-500 text-white font-bold rounded-lg uppercase hover:bg-green-600 transition-all shadow-lg text-[10px]">
-       <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg> EXPORT
-      </button>
+      <div class="flex gap-2">
+       <button onclick="window.refreshData()" class="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500 text-white font-bold rounded-lg uppercase hover:bg-purple-600 transition-all shadow-lg text-[10px]">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> REFRESH
+       </button>
+       <button id="export-management" class="flex items-center gap-1.5 px-3 py-1.5 bg-green-500 text-white font-bold rounded-lg uppercase hover:bg-green-600 transition-all shadow-lg text-[10px]">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg> EXPORT
+       </button>
+      </div>
      </div>
+     
+     <!-- ADD IJP DATA - Auto Capslock + Dropdown Line -->
      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-4 mb-4">
       <h3 class="font-orbitron font-bold text-sm text-gray-800 dark:text-white uppercase mb-3">ADD IJP DATA</h3>
       <form id="management-form" class="space-y-4">
        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
          <label for="machine_name" class="block text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase mb-1">NAMA MESIN</label>
-         <input type="text" id="machine_name" name="machine_name" required class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white uppercase text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" placeholder="MACHINE NAME">
+         <input type="text" id="machine_name" name="machine_name" required class="auto-upper w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white uppercase text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" placeholder="MACHINE NAME">
         </div>
         <div>
          <label for="line_mg" class="block text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase mb-1">LINE</label>
-         <input type="text" id="line_mg" name="line_mg" required class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white uppercase text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" placeholder="LINE">
+         <select id="line_mg" name="line_mg" required class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white uppercase text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all">
+          <option value="">-- SELECT LINE --</option>
+          <option value="LINE01">LINE01</option>
+          <option value="LINE02">LINE02</option>
+          <option value="LINE03">LINE03</option>
+          <option value="LINE04">LINE04</option>
+          <option value="LINE05">LINE05</option>
+          <option value="LINE06">LINE06</option>
+          <option value="LINE09">LINE09</option>
+         </select>
         </div>
         <div>
          <label for="service" class="block text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase mb-1">SERIAL NUMBER IJP</label>
-         <input type="text" id="service" name="service" required class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white uppercase text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" placeholder="SERIAL NUMBER">
+         <input type="text" id="service" name="service" required class="auto-upper w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white uppercase text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" placeholder="SERIAL NUMBER">
         </div>
        </div>
        <button type="submit" id="submit-management" class="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-bold rounded-lg uppercase tracking-wide hover:from-emerald-600 hover:to-cyan-600 transition-all shadow-lg text-[11px]">
@@ -454,9 +539,24 @@
        <p class="text-emerald-700 dark:text-emerald-400 font-semibold uppercase text-sm">✓ DATA UPLOADED!</p>
       </div>
      </div>
+     
+     <!-- Management Table dengan Filter Line -->
      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-      <div class="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+      <div class="px-4 py-2 border-b border-gray-200 dark:border-gray-700 flex flex-wrap items-center justify-between gap-2">
        <h3 class="font-orbitron font-bold text-sm text-gray-800 dark:text-white uppercase">IJP REGISTRY</h3>
+       <div class="flex items-center gap-2">
+        <label class="text-[9px] font-bold text-gray-600 dark:text-gray-400 uppercase">Filter Line:</label>
+        <select id="management-line-filter" class="filter-select px-2 py-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-xs focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all">
+          <option value="ALL">ALL</option>
+          <option value="LINE01">LINE01</option>
+          <option value="LINE02">LINE02</option>
+          <option value="LINE03">LINE03</option>
+          <option value="LINE04">LINE04</option>
+          <option value="LINE05">LINE05</option>
+          <option value="LINE06">LINE06</option>
+          <option value="LINE09">LINE09</option>
+        </select>
+       </div>
       </div>
       <div class="overflow-x-auto">
        <table class="w-full text-[11px]">
@@ -530,6 +630,40 @@
    </div>
   </div>
 
+  <!-- Edit Modal -->
+  <div id="edit-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+   <div class="edit-card bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-3 shadow-2xl border-2 border-blue-500">
+    <h3 class="font-orbitron font-bold text-base text-gray-800 dark:text-white uppercase mb-3">EDIT IJP DATA</h3>
+    <input type="hidden" id="edit-id">
+    <div class="space-y-3">
+     <div>
+      <label class="block text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase mb-1">NAMA MESIN</label>
+      <input type="text" id="edit-machine-name" class="auto-upper w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white uppercase text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all">
+     </div>
+     <div>
+      <label class="block text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase mb-1">LINE</label>
+      <select id="edit-line" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white uppercase text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all">
+       <option value="LINE01">LINE01</option>
+       <option value="LINE02">LINE02</option>
+       <option value="LINE03">LINE03</option>
+       <option value="LINE04">LINE04</option>
+       <option value="LINE05">LINE05</option>
+       <option value="LINE06">LINE06</option>
+       <option value="LINE09">LINE09</option>
+      </select>
+     </div>
+     <div>
+      <label class="block text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase mb-1">SERIAL NUMBER IJP</label>
+      <input type="text" id="edit-serial" class="auto-upper w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white uppercase text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all">
+     </div>
+    </div>
+    <div class="flex gap-3 mt-5">
+     <button id="save-edit" class="flex-1 px-4 py-2 bg-blue-500 text-white font-bold rounded-lg uppercase hover:bg-blue-600 transition-all text-sm">SAVE</button>
+     <button id="cancel-edit" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold rounded-lg uppercase hover:bg-gray-300 dark:hover:bg-gray-600 transition-all text-sm">CANCEL</button>
+    </div>
+   </div>
+  </div>
+
   <!-- Login Modal -->
   <div id="login-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden">
    <div class="login-card bg-white dark:bg-gray-800 rounded-xl p-6 max-w-sm w-full mx-3 shadow-2xl border-2 border-emerald-500">
@@ -561,7 +695,6 @@
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-    // Memory storage fallback
     const memoryStorage = {};
     const storage = {
       getItem: (key) => { try { return localStorage.getItem(key); } catch(e) { return memoryStorage[key] || null; } },
@@ -569,10 +702,13 @@
       removeItem: (key) => { try { localStorage.removeItem(key); } catch(e) { delete memoryStorage[key]; } }
     };
 
-    let allData = [], managementData = [], deleteTarget = null
+    let allData = [], managementData = [], deleteTarget = null, editTarget = null
     let chartInstance = null, problemChartInstance = null, weeklyTrendChart = null, machineComparisonChart = null
     let loadTimeout, isAuthenticated = false
     const MANAGEMENT_PASSWORD = 'Dankos2026'
+    let currentDashboardFilter = 'ALL'
+    let currentMonitoringFilter = 'ALL'
+    let currentManagementFilter = 'ALL'
 
     // ===== NAVIGATION =====
     function setupNavigation() {
@@ -634,9 +770,12 @@
           loginError.classList.add('hidden')
           updateAuthUI()
           document.getElementById('security-notif').classList.add('hidden')
+          updateManagementTable()
+          updateAuditTable()
         } else {
           loginError.classList.remove('hidden')
           passwordInput.value = ''
+          passwordInput.focus()
         }
       })
 
@@ -683,15 +822,32 @@
 
     // ===== AUTO LOCK =====
     function setupAutoLock() {
+      let blurTimer = null
+      
       document.addEventListener('visibilitychange', () => {
-        if (document.hidden && isAuthenticated) forceLogout('TAB SWITCH')
+        if (document.hidden && isAuthenticated) {
+          blurTimer = setTimeout(() => {
+            if (document.hidden && isAuthenticated) {
+              forceLogout('TAB SWITCH')
+            }
+          }, 3000)
+        } else if (!document.hidden) {
+          clearTimeout(blurTimer)
+        }
       })
+      
       window.addEventListener('blur', () => {
         if (isAuthenticated) {
-          setTimeout(() => {
-            if (!document.hasFocus() && isAuthenticated) forceLogout('WINDOW BLUR')
+          blurTimer = setTimeout(() => {
+            if (!document.hasFocus() && isAuthenticated) {
+              forceLogout('WINDOW BLUR')
+            }
           }, 5000)
         }
+      })
+      
+      window.addEventListener('focus', () => {
+        clearTimeout(blurTimer)
       })
     }
 
@@ -718,7 +874,9 @@
       setupAutoLock()
       setupForms()
       setupDeleteModal()
+      setupEditModal()
       setupExportButtons()
+      setupFilters()
       updateClock()
       setInterval(updateClock, 1000)
       document.getElementById('monitoring_date').value = new Date().toISOString().split('T')[0]
@@ -749,6 +907,30 @@
       })
     }
 
+    // ===== FILTERS =====
+    function setupFilters() {
+      document.getElementById('dashboard-line-filter').addEventListener('change', function() {
+        currentDashboardFilter = this.value
+        updateDashboard()
+        updateMonitoringTable()
+      })
+      
+      document.getElementById('monitoring-line-filter').addEventListener('change', function() {
+        currentMonitoringFilter = this.value
+        updateMonitoringTable()
+      })
+      
+      document.getElementById('management-line-filter').addEventListener('change', function() {
+        currentManagementFilter = this.value
+        updateManagementTable()
+      })
+    }
+
+    function filterByLine(data, filter) {
+      if (filter === 'ALL') return data
+      return data.filter(item => item.line === filter)
+    }
+
     // ===== LOAD DATA =====
     async function loadAllData() {
       try {
@@ -776,7 +958,6 @@
         updateDashboard()
         updateMonitoringTable()
         if (isAuthenticated) { updateManagementTable(); updateAuditTable() }
-        updateCriticalAlerts()
         populateWeekSelector()
       } catch (error) {
         console.error('Error loading data:', error)
@@ -869,14 +1050,16 @@
       })
       const ctx = canvas.getContext('2d')
       if (machineComparisonChart) machineComparisonChart.destroy()
+      const labels = Object.keys(machineData).sort()
+      const colors = ['#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6']
       machineComparisonChart = new Chart(ctx, {
         type: 'bar',
         data: {
-          labels: Object.keys(machineData).sort(),
+          labels: labels,
           datasets: [{
             label: 'TOTAL OP TIME (HRS)',
-            data: Object.values(machineData),
-            backgroundColor: ['#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
+            data: labels.map(l => machineData[l]),
+            backgroundColor: labels.map((_, i) => colors[i % colors.length]),
             borderRadius: 4
           }]
         },
@@ -905,36 +1088,124 @@
       }).join('')
     }
 
+    // ===== DASHBOARD UPDATE - PARETO CHART (DESCENDING) =====
     function updateDashboard() {
       const monitoringData = allData.filter(d => d.table_type === 'monitoring')
+      const filteredData = filterByLine(monitoringData, currentDashboardFilter)
       const mgData = allData.filter(d => d.table_type === 'management')
+      
       document.getElementById('stat-total').textContent = mgData.length
-      document.getElementById('stat-active').textContent = monitoringData.length
-      document.getElementById('stat-problems').textContent = monitoringData.filter(d => d.problem_exists === 'ADA').length
-      document.getElementById('stat-lines').textContent = new Set(monitoringData.map(d => d.line)).size
-      updateMonitoringChart(monitoringData)
-      updateProblemChart(monitoringData)
+      document.getElementById('stat-active').textContent = filteredData.length
+      document.getElementById('stat-problems').textContent = filteredData.filter(d => d.problem_exists === 'ADA').length
+      
+      const uniqueLines = new Set(filteredData.map(d => d.line))
+      document.getElementById('stat-lines').textContent = uniqueLines.size
+      document.getElementById('filtered-count').textContent = `Showing: ${filteredData.length} units`
+      
+      updateParetoChart(filteredData)
+      updateProblemChart(filteredData)
     }
 
-    function updateMonitoringChart(monitoringData) {
+    // ===== PARETO CHART - DESCENDING + BLINK EFFECT =====
+    function updateParetoChart(monitoringData) {
       const canvas = document.getElementById('monitoring-chart')
       if (!canvas) return
-      const data = monitoringData.map(d => ({ machine: d.machine || 'UNKNOWN', opTime: d.cumulative_op_time || 0 }))
-        .sort((a, b) => a.opTime - b.opTime)
+      
+      // Group by machine, get latest data
+      const machineMap = {}
+      monitoringData.forEach(d => {
+        const key = d.machine || 'UNKNOWN'
+        if (!machineMap[key] || new Date(d.monitoring_date) > new Date(machineMap[key].monitoring_date)) {
+          machineMap[key] = d
+        }
+      })
+      
+      // Sort DESCENDING (terbesar ke terkecil) - PRINSIP PARETO
+      const data = Object.values(machineMap)
+        .sort((a, b) => (b.cumulative_op_time || 0) - (a.cumulative_op_time || 0))
+      
       const ctx = canvas.getContext('2d')
       if (chartInstance) chartInstance.destroy()
+      
+      // Warna dengan efek kedip untuk critical dan warning
+      const backgroundColors = data.map(d => {
+        const op = d.cumulative_op_time || 0
+        if (op >= 15000) return '#ef4444' // Critical - merah
+        if (op >= 10000) return '#f59e0b' // Warning - orange
+        return '#10b981' // Normal - hijau
+      })
+      
+      // Border dengan efek kedip untuk critical
+      const borderColors = data.map(d => {
+        const op = d.cumulative_op_time || 0
+        if (op >= 15000) return '#dc2626'
+        if (op >= 10000) return '#d97706'
+        return '#059669'
+      })
+      
       chartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
-          labels: data.map(d => d.machine),
+          labels: data.map(d => d.machine || 'UNKNOWN'),
           datasets: [{
             label: 'OP TIME (HRS)',
-            data: data.map(d => d.opTime),
-            backgroundColor: data.map(d => d.opTime >= 15000 ? '#ef4444' : d.opTime >= 10000 ? '#f59e0b' : '#10b981'),
+            data: data.map(d => d.cumulative_op_time || 0),
+            backgroundColor: backgroundColors,
+            borderColor: borderColors,
+            borderWidth: 2,
             borderRadius: 4
           }]
         },
-        options: { responsive: true, maintainAspectRatio: false }
+        options: { 
+          responsive: true, 
+          maintainAspectRatio: false,
+          plugins: { 
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  let label = context.parsed.y + ' HRS'
+                  const op = context.parsed.y
+                  if (op >= 15000) label += ' 🔴 CRITICAL!'
+                  else if (op >= 10000) label += ' ⚠️ WARNING'
+                  return label
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { font: { size: 9 } }
+            },
+            x: {
+              ticks: { font: { size: 9, weight: 'bold' } }
+            }
+          }
+        },
+        plugins: [{
+          // Custom plugin untuk efek blink pada bar critical
+          id: 'blinkEffect',
+          afterDraw: function(chart) {
+            const ctx = chart.ctx
+            const meta = chart.getDatasetMeta(0)
+            if (!meta || !meta.data) return
+            
+            meta.data.forEach((bar, index) => {
+              const dataValue = chart.data.datasets[0].data[index]
+              if (dataValue >= 10000) {
+                const blink = Math.sin(Date.now() / 400) > 0
+                if (blink) {
+                  ctx.save()
+                  ctx.globalAlpha = 0.3
+                  ctx.fillStyle = dataValue >= 15000 ? '#ef4444' : '#f59e0b'
+                  ctx.fillRect(bar.x - bar.width/2, bar.y, bar.width, bar.height)
+                  ctx.restore()
+                }
+              }
+            })
+          }
+        }]
       })
     }
 
@@ -943,50 +1214,53 @@
       if (!canvas) return
       const ada = monitoringData.filter(d => d.problem_exists === 'ADA').length
       const tidak = monitoringData.filter(d => d.problem_exists === 'TIDAK ADA').length
+      const kosong = monitoringData.filter(d => !d.problem_exists || d.problem_exists === '').length
       const ctx = canvas.getContext('2d')
       if (problemChartInstance) problemChartInstance.destroy()
+      
+      const total = ada + tidak + kosong
+      if (total === 0) {
+        problemChartInstance = new Chart(ctx, {
+          type: 'doughnut',
+          data: { labels: ['NO DATA'], datasets: [{ data: [1], backgroundColor: ['#94a3b8'] }] },
+          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true } } }
+        })
+        return
+      }
+      
       problemChartInstance = new Chart(ctx, {
         type: 'doughnut',
-        data: { labels: ['PROBLEM FOUND', 'NORMAL'], datasets: [{ data: [ada, tidak], backgroundColor: ['#ef4444', '#10b981'] }] },
+        data: { 
+          labels: ['PROBLEM FOUND', 'NORMAL', 'NO DATA'], 
+          datasets: [{ 
+            data: [ada, tidak, kosong], 
+            backgroundColor: ['#ef4444', '#10b981', '#94a3b8'] 
+          }] 
+        },
         options: { responsive: true, maintainAspectRatio: false }
       })
     }
 
-    function updateCriticalAlerts() {
-      const container = document.getElementById('critical-alerts')
-      const data = allData.filter(d => d.table_type === 'monitoring')
-      const critical = data.filter(d => d.cumulative_op_time >= 15000)
-      const warning = data.filter(d => d.cumulative_op_time >= 10000 && d.cumulative_op_time < 15000)
-      let html = ''
-      critical.forEach(item => {
-        html += `<div class="bg-red-50 dark:bg-red-900/20 border-2 border-red-500 rounded-xl p-3 mb-3"><div class="flex items-start gap-2">
-          <div class="text-2xl critical-pulse">🚨</div>
-          <div><h3 class="font-orbitron font-bold text-red-700 dark:text-red-400 text-sm uppercase">CRITICAL - SERVICE REQUIRED</h3>
-          <p class="text-red-600 dark:text-red-300 text-xs uppercase"><strong>LINE:</strong> ${item.line || '-'} | <strong>SERIAL:</strong> ${item.serial_number} | <strong>OP TIME:</strong> ${item.cumulative_op_time} HRS</p></div>
-        </div></div>`
-      })
-      warning.forEach(item => {
-        html += `<div class="bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-500 rounded-xl p-3 mb-3"><div class="flex items-start gap-2">
-          <div class="text-2xl blink-warning">⚠️</div>
-          <div><h3 class="font-orbitron font-bold text-amber-700 dark:text-amber-400 text-sm uppercase">WARNING - REPLACEMENT NEEDED</h3>
-          <p class="text-amber-600 dark:text-amber-300 text-xs uppercase"><strong>LINE:</strong> ${item.line || '-'} | <strong>SERIAL:</strong> ${item.serial_number} | <strong>OP TIME:</strong> ${item.cumulative_op_time} HRS</p></div>
-        </div></div>`
-      })
-      container.innerHTML = html
-    }
-
+    // ===== MONITORING TABLE =====
     function updateMonitoringTable() {
       const tbody = document.getElementById('monitoring-table')
-      const data = allData.filter(d => d.table_type === 'monitoring')
-      if (!data.length) { tbody.innerHTML = '<tr><td colspan="7" class="px-3 py-6 text-center text-gray-500 dark:text-gray-400 uppercase text-[10px]">NO DATA</td></tr>'; return }
-      tbody.innerHTML = data.slice(0, 20).map(item => {
+      let data = allData.filter(d => d.table_type === 'monitoring')
+      data = filterByLine(data, currentMonitoringFilter)
+      
+      if (!data.length) { 
+        tbody.innerHTML = '<tr><td colspan="8" class="px-3 py-6 text-center text-gray-500 dark:text-gray-400 uppercase text-[10px]">NO MONITORING DATA</td></tr>'; 
+        return 
+      }
+      
+      tbody.innerHTML = data.slice(0, 50).map((item, index) => {
         const op = item.cumulative_op_time || 0
         let status = 'NORMAL', cls = 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400', anim = ''
-        if (op >= 15000) { status = 'CRITICAL'; cls = 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'; anim = 'blink-critical' }
-        else if (op >= 10000) { status = 'WARNING'; cls = 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'; anim = 'blink-warning' }
+        if (op >= 15000) { status = 'CRITICAL'; cls = 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 blink-critical'; anim = 'blink-critical' }
+        else if (op >= 10000) { status = 'WARNING'; cls = 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 blink-warning'; anim = 'blink-warning' }
         const condCls = item.ijp_condition === 'OK' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
         const probCls = item.problem_exists === 'ADA' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
         return `<tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+          <td class="px-3 py-2 text-sm font-semibold text-gray-500 dark:text-gray-400">${index + 1}</td>
           <td class="px-3 py-2 text-sm font-semibold uppercase">${item.line || '-'}</td>
           <td class="px-3 py-2 text-sm font-mono">${item.serial_number || '-'}</td>
           <td class="px-3 py-2 text-sm uppercase">${item.machine || '-'}</td>
@@ -998,44 +1272,183 @@
       }).join('')
     }
 
+    // ===== MANAGEMENT TABLE =====
     function updateManagementTable() {
       if (!isAuthenticated) return
       const tbody = document.getElementById('management-table')
-      const data = allData.filter(d => d.table_type === 'management')
-      if (!data.length) { tbody.innerHTML = '<tr><td colspan="4" class="px-3 py-6 text-center text-gray-500 dark:text-gray-400 uppercase text-[10px]">NO DATA</td></tr>'; return }
+      let data = allData.filter(d => d.table_type === 'management')
+      data = filterByLine(data, currentManagementFilter)
+      
+      if (!data.length) { 
+        tbody.innerHTML = '<tr><td colspan="4" class="px-3 py-6 text-center text-gray-500 dark:text-gray-400 uppercase text-[10px]">NO DATA</td></tr>'; 
+        return 
+      }
+      
       tbody.innerHTML = data.map(item => `
         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
           <td class="px-3 py-2 text-sm font-semibold uppercase">${item.machine_name || '-'}</td>
           <td class="px-3 py-2 text-sm uppercase">${item.line || '-'}</td>
-          <td class="px-3 py-2 text-sm uppercase">
-            <div class="flex items-center gap-2">
-              <input type="text" value="${item.serial_number || ''}" class="serial-edit-input flex-1 px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white uppercase font-semibold text-sm" data-id="${item.id}" data-original="${item.serial_number || ''}">
-              <button onclick="window.saveSerialNumber('${item.id}', this)" class="px-2 py-1 text-[9px] font-bold bg-green-500 text-white rounded uppercase hover:bg-green-600">✓</button>
+          <td class="px-3 py-2 text-sm uppercase">${item.serial_number || '-'}</td>
+          <td class="px-3 py-2">
+            <div class="flex gap-1">
+              <button onclick="window.openEditModal('${item.id}')" class="px-2 py-1 text-[9px] font-bold bg-blue-500 text-white rounded uppercase hover:bg-blue-600 transition-all">EDIT</button>
+              <button onclick="window.showDeleteModal({id: '${item.id}'})" class="px-2 py-1 text-[9px] font-bold text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded uppercase transition-all">DELETE</button>
             </div>
           </td>
-          <td class="px-3 py-2"><button onclick="window.showDeleteModal({id: '${item.id}'})" class="px-2 py-1 text-[9px] font-bold text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded uppercase transition-all">DELETE</button></td>
         </tr>
       `).join('')
     }
 
-    function updateAuditTable() {
-      if (!isAuthenticated) return
-      const tbody = document.getElementById('audit-table')
-      const data = allData.filter(d => d.table_type === 'audit').sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-      document.getElementById('audit-count').textContent = `${data.length} RECORDS`
-      if (!data.length) { tbody.innerHTML = '<tr><td colspan="3" class="px-3 py-6 text-center text-gray-500 dark:text-gray-400 uppercase text-[10px]">NO ACTIVITY</td></tr>'; return }
-      tbody.innerHTML = data.map(item => `
-        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-          <td class="px-3 py-2 text-[10px] font-mono text-gray-600 dark:text-gray-400">${new Date(item.created_at).toLocaleString()}</td>
-          <td class="px-3 py-2"><span class="px-2 py-0.5 text-[9px] font-bold bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400 rounded uppercase">${item.user_action || '-'}</span></td>
-          <td class="px-3 py-2 text-sm uppercase">${item.activity || '-'}</td>
-        </tr>
-      `).join('')
+    // ===== EDIT MODAL =====
+    function setupEditModal() {
+      const modal = document.getElementById('edit-modal')
+      const cancelBtn = document.getElementById('cancel-edit')
+      const saveBtn = document.getElementById('save-edit')
+      
+      cancelBtn.addEventListener('click', () => {
+        modal.classList.add('hidden')
+        editTarget = null
+      })
+      
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.classList.add('hidden')
+          editTarget = null
+        }
+      })
+      
+      saveBtn.addEventListener('click', async () => {
+        if (!editTarget) return
+        if (!isAuthenticated) { 
+          document.getElementById('login-modal').classList.remove('hidden'); 
+          return 
+        }
+        
+        const id = document.getElementById('edit-id').value
+        const machineName = document.getElementById('edit-machine-name').value.toUpperCase().trim()
+        const line = document.getElementById('edit-line').value.toUpperCase().trim()
+        const serial = document.getElementById('edit-serial').value.toUpperCase().trim()
+        
+        if (!machineName || !line || !serial) {
+          alert('All fields are required!')
+          return
+        }
+        
+        saveBtn.disabled = true
+        saveBtn.textContent = 'SAVING...'
+        
+        try {
+          const { error } = await supabase
+            .from('management_data')
+            .update({ machine_name: machineName, line: line, serial_number: serial })
+            .eq('id', id)
+          
+          if (error) throw error
+          
+          modal.classList.add('hidden')
+          editTarget = null
+          await loadAllData()
+          updateManagementTable()
+          updateFormDropdowns()
+          showFormMessage('management-success', '✓ DATA UPDATED!')
+          await logAudit('IJP UPDATED', `ID: ${id}, NEW: ${machineName} - ${serial}`)
+        } catch (error) {
+          console.error('Update error:', error)
+          showFormMessage('management-success', `❌ ERROR: ${error.message}`, true)
+        } finally {
+          saveBtn.disabled = false
+          saveBtn.textContent = 'SAVE'
+        }
+      })
+    }
+
+    window.openEditModal = function(id) {
+      if (!isAuthenticated) { 
+        document.getElementById('login-modal').classList.remove('hidden'); 
+        return 
+      }
+      
+      const item = allData.find(d => d.id === id && d.table_type === 'management')
+      if (!item) return
+      
+      editTarget = item
+      document.getElementById('edit-id').value = item.id
+      document.getElementById('edit-machine-name').value = item.machine_name || ''
+      document.getElementById('edit-line').value = item.line || 'LINE01'
+      document.getElementById('edit-serial').value = item.serial_number || ''
+      document.getElementById('edit-modal').classList.remove('hidden')
+    }
+
+    // ===== DELETE MODAL =====
+    function setupDeleteModal() {
+      document.getElementById('cancel-delete').addEventListener('click', () => {
+        document.getElementById('delete-modal').classList.add('hidden'); deleteTarget = null
+      })
+      document.getElementById('confirm-delete').addEventListener('click', async () => {
+        if (!deleteTarget) return
+        if (!isAuthenticated) { 
+          document.getElementById('login-modal').classList.remove('hidden'); 
+          return 
+        }
+        const btn = document.getElementById('confirm-delete')
+        btn.disabled = true; btn.textContent = 'DELETING...'
+        try {
+          const { error } = await supabase.from('management_data').delete().eq('id', deleteTarget.id)
+          if (error) throw error
+          document.getElementById('delete-modal').classList.add('hidden')
+          await loadAllData()
+          updateManagementTable()
+          updateFormDropdowns()
+          showFormMessage('management-success', '✓ RECORD DELETED!')
+          await logAudit('RECORD DELETED', `ID: ${deleteTarget.id}`)
+          deleteTarget = null
+        } catch (error) {
+          console.error('Delete error:', error)
+          showFormMessage('management-success', `❌ ERROR: ${error.message}`, true)
+        } finally {
+          btn.disabled = false; btn.textContent = 'DELETE'
+        }
+      })
+    }
+
+    function showDeleteModal(record) {
+      if (!isAuthenticated) { 
+        document.getElementById('login-modal').classList.remove('hidden'); 
+        return 
+      }
+      deleteTarget = record
+      document.getElementById('delete-modal').classList.remove('hidden')
     }
 
     // ===== FORMS =====
     function setupForms() {
       const problemSection = document.getElementById('problem-section')
+      
+      document.getElementById('photo_upload').addEventListener('change', (e) => {
+        const file = e.target.files[0]
+        const preview = document.getElementById('photo-preview')
+        const filename = document.getElementById('photo-filename')
+        if (file) {
+          if (file.size > 5 * 1024 * 1024) { 
+            filename.textContent = 'ERROR: FILE TOO BIG (MAX 5MB)'
+            filename.classList.add('text-red-500')
+            preview.classList.add('hidden')
+            return 
+          }
+          filename.classList.remove('text-red-500')
+          const reader = new FileReader()
+          reader.onload = (ev) => {
+            document.getElementById('preview-img').src = ev.target.result
+            preview.classList.remove('hidden')
+            filename.textContent = `📎 ${file.name} (${(file.size / 1024).toFixed(1)} KB)`
+          }
+          reader.readAsDataURL(file)
+        } else { 
+          preview.classList.add('hidden'); 
+          filename.textContent = 'NO FILE SELECTED';
+          filename.classList.remove('text-red-500')
+        }
+      })
 
       document.getElementById('problem_exists').addEventListener('change', function() {
         if (this.value === 'ADA') {
@@ -1048,6 +1461,10 @@
           document.getElementById('problem_action').value = ''
           document.getElementById('problem_description').required = false
           document.getElementById('problem_action').required = false
+          document.getElementById('photo_upload').value = ''
+          document.getElementById('photo-preview').classList.add('hidden')
+          document.getElementById('photo-filename').textContent = 'NO FILE SELECTED'
+          document.getElementById('photo-filename').classList.remove('text-red-500')
         }
       })
 
@@ -1090,10 +1507,36 @@
         }
       })
 
+      document.getElementById('edit-serial-btn').addEventListener('click', function() {
+        const serialDropdown = document.getElementById('serial_dropdown')
+        const selectedSerial = serialDropdown.value
+        
+        if (!selectedSerial) {
+          alert('Please select a serial number first!')
+          return
+        }
+        
+        const item = managementData.find(d => d.serial_number === selectedSerial)
+        if (!item) {
+          alert('Serial number not found in management!')
+          return
+        }
+        
+        if (!isAuthenticated) {
+          document.getElementById('login-modal').classList.remove('hidden')
+          return
+        }
+        
+        window.openEditModal(item.id)
+      })
+
       document.getElementById('reset-form').addEventListener('click', function(e) {
         e.preventDefault()
         document.getElementById('monitoring-form').reset()
         problemSection.classList.add('hidden')
+        document.getElementById('photo-preview').classList.add('hidden')
+        document.getElementById('photo-filename').textContent = 'NO FILE SELECTED'
+        document.getElementById('photo-filename').classList.remove('text-red-500')
         document.getElementById('monitoring_date').value = new Date().toISOString().split('T')[0]
         document.getElementById('form-success').classList.add('hidden')
         const machineDropdown = document.getElementById('machine_dropdown')
@@ -1103,48 +1546,39 @@
 
       document.getElementById('monitoring-form').addEventListener('submit', async (e) => {
         e.preventDefault()
-        
-        const problemExists = document.getElementById('problem_exists').value
-        const problemDesc = document.getElementById('problem_description').value.trim()
-        const problemAction = document.getElementById('problem_action').value.trim()
-        
-        if (problemExists === 'ADA') {
-          if (!problemDesc) {
-            showFormMessage('form-success', '❌ DESKRIPSI PROBLEM WAJIB DIISI!', true)
-            document.getElementById('problem_description').focus()
-            return
-          }
-          if (!problemAction) {
-            showFormMessage('form-success', '❌ ACTION / SOLUSI WAJIB DIISI!', true)
-            document.getElementById('problem_action').focus()
-            return
-          }
-        }
-        
         const btn = document.getElementById('submit-monitoring')
         btn.disabled = true; 
-        btn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> SUBMITTING...'
+        btn.innerHTML = 'SUBMITTING...'
         try {
+          let photoUrl = ''
+          const photoFile = document.getElementById('photo_upload').files[0]
           const filterReplaced = document.getElementById('filter_replaced').checked
           let finalOpTime = parseInt(document.getElementById('cumulative_op_time').value) || 0
-          if (filterReplaced) finalOpTime = 0
           
-          const serialNumber = document.getElementById('serial_dropdown').value.toUpperCase()
-          const machineName = document.getElementById('machine').value.toUpperCase()
+          if (photoFile && document.getElementById('problem_exists').value === 'ADA') {
+            const safeName = `${Date.now()}-${photoFile.name.replace(/[^a-zA-Z0-9.-]/g, '_').slice(-50)}`
+            const { error: uploadError } = await supabase.storage.from('ijp_monitoring').upload(`ijp-photos/${safeName}`, photoFile)
+            if (!uploadError) {
+              const { data } = supabase.storage.from('ijp_monitoring').getPublicUrl(`ijp-photos/${safeName}`)
+              photoUrl = data.publicUrl
+            }
+          }
+          
+          if (filterReplaced) finalOpTime = 0
           
           const formData = {
             line: document.getElementById('line').value.toUpperCase() || '',
-            serial_number: serialNumber,
-            machine: machineName,
+            serial_number: document.getElementById('serial_dropdown').value.toUpperCase(),
+            machine: document.getElementById('machine').value.toUpperCase(),
             monitoring_date: document.getElementById('monitoring_date').value,
             cumulative_op_time: finalOpTime,
             weekly_increment: 0,
             ijp_condition: document.getElementById('ijp_condition').value.toUpperCase(),
-            problem_exists: problemExists,
-            problem_description: problemDesc,
-            problem_action: problemAction,
+            problem_exists: document.getElementById('problem_exists').value.toUpperCase(),
+            problem_description: document.getElementById('problem_description').value || '',
+            problem_action: document.getElementById('problem_action').value || '',
             notes: document.getElementById('notes').value || '',
-            photo_url: '', // TANPA FOTO
+            photo_url: photoUrl,
             filter_replaced: filterReplaced
           }
           
@@ -1153,19 +1587,23 @@
           
           document.getElementById('monitoring-form').reset()
           problemSection.classList.add('hidden')
+          document.getElementById('photo-preview').classList.add('hidden')
+          document.getElementById('photo-filename').textContent = 'NO FILE SELECTED'
+          document.getElementById('photo-filename').classList.remove('text-red-500')
           document.getElementById('monitoring_date').value = new Date().toISOString().split('T')[0]
-          showFormMessage('form-success', '✅ DATA SUBMITTED SUCCESSFULLY!')
-          await logAudit('MONITORING ADDED', `SERIAL: ${serialNumber}, LINE: ${formData.line}`)
+          showFormMessage('form-success', '✓ DATA SUBMITTED SUCCESSFULLY!')
+          await logAudit('MONITORING ADDED', `SERIAL: ${formData.serial_number}`)
           await loadAllData()
         } catch (error) {
           console.error('Submit error:', error)
           showFormMessage('form-success', `❌ ERROR: ${error.message}`, true)
         } finally {
           btn.disabled = false; 
-          btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg> SUBMIT'
+          btn.innerHTML = 'SUBMIT'
         }
       })
 
+      // MANAGEMENT FORM - Auto caps lock sudah pake CSS class auto-upper
       document.getElementById('management-form').addEventListener('submit', async (e) => {
         e.preventDefault()
         if (!isAuthenticated) { 
@@ -1174,7 +1612,7 @@
         }
         const btn = document.getElementById('submit-management')
         btn.disabled = true; 
-        btn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> UPLOADING...'
+        btn.innerHTML = 'UPLOADING...'
         try {
           const machineName = document.getElementById('machine_name').value.toUpperCase().trim()
           const line = document.getElementById('line_mg').value.toUpperCase().trim()
@@ -1192,15 +1630,17 @@
           const { error } = await supabase.from('management_data').insert([formData])
           if (error) throw error
           document.getElementById('management-form').reset()
-          showFormMessage('management-success', '✅ DATA UPLOADED SUCCESSFULLY!')
-          await logAudit('IJP REGISTERED', `MACHINE: ${formData.machine_name}, SERIAL: ${formData.serial_number}`)
+          showFormMessage('management-success', '✓ DATA UPLOADED SUCCESSFULLY!')
+          await logAudit('IJP REGISTERED', `MACHINE: ${formData.machine_name}`)
           await loadAllData()
+          updateManagementTable()
+          updateFormDropdowns()
         } catch (error) {
           console.error('Management submit error:', error)
           showFormMessage('management-success', `❌ ERROR: ${error.message}`, true)
         } finally {
           btn.disabled = false; 
-          btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg> UPLOAD'
+          btn.innerHTML = 'UPLOAD'
         }
       })
     }
@@ -1211,45 +1651,6 @@
       el.classList.remove('hidden')
       clearTimeout(el._timeout)
       el._timeout = setTimeout(() => el.classList.add('hidden'), 5000)
-    }
-
-    // ===== DELETE MODAL =====
-    function setupDeleteModal() {
-      document.getElementById('cancel-delete').addEventListener('click', () => {
-        document.getElementById('delete-modal').classList.add('hidden'); deleteTarget = null
-      })
-      document.getElementById('confirm-delete').addEventListener('click', async () => {
-        if (!deleteTarget) return
-        if (!isAuthenticated) { 
-          document.getElementById('login-modal').classList.remove('hidden'); 
-          return 
-        }
-        const btn = document.getElementById('confirm-delete')
-        btn.disabled = true; btn.textContent = 'DELETING...'
-        try {
-          const { error } = await supabase.from('management_data').delete().eq('id', deleteTarget.id)
-          if (error) throw error
-          await logAudit('RECORD DELETED', `ID: ${deleteTarget.id}`)
-          document.getElementById('delete-modal').classList.add('hidden')
-          deleteTarget = null
-          showFormMessage('management-success', '✅ RECORD DELETED!')
-          await loadAllData()
-        } catch (error) {
-          console.error('Delete error:', error)
-          showFormMessage('management-success', `❌ ERROR: ${error.message}`, true)
-        } finally {
-          btn.disabled = false; btn.textContent = 'DELETE'
-        }
-      })
-    }
-
-    function showDeleteModal(record) {
-      if (!isAuthenticated) { 
-        document.getElementById('login-modal').classList.remove('hidden'); 
-        return 
-      }
-      deleteTarget = record
-      document.getElementById('delete-modal').classList.remove('hidden')
     }
 
     // ===== EXPORT =====
@@ -1308,6 +1709,18 @@
       XLSX.writeFile(wb, `audit-${new Date().toISOString().split('T')[0]}.xlsx`)
     }
 
+    // ===== AUDIT LOG =====
+    async function logAudit(action, details) {
+      try { 
+        const result = await supabase.from('audit_logs').insert([{ user_action: action, activity: details }])
+        if (result.error) {
+          console.warn('Audit log non-critical error:', result.error.message)
+        }
+      } catch (e) { 
+        console.warn('Audit log non-critical error:', e.message)
+      }
+    }
+
     // ===== SUBSCRIBE =====
     function subscribeToChanges() {
       supabase.channel('monitoring_changes')
@@ -1329,15 +1742,6 @@
         .subscribe()
     }
 
-    // ===== LOG AUDIT =====
-    async function logAudit(action, details) {
-      try { 
-        await supabase.from('audit_logs').insert([{ user_action: action, activity: details }]) 
-      } catch (e) { 
-        console.error('Audit error:', e) 
-      }
-    }
-
     // ===== CLOCK =====
     function updateClock() {
       document.getElementById('current-time').textContent = new Date().toLocaleString('en-US', {
@@ -1345,8 +1749,18 @@
       }).toUpperCase()
     }
 
+    // ===== REFRESH DATA =====
+    window.refreshData = async function() {
+      await loadAllData()
+      updateFormDropdowns()
+      updateManagementTable()
+      updateAuditTable()
+      showFormMessage('form-success', '✓ DATA REFRESHED!')
+    }
+
     // ===== GLOBAL FUNCTIONS =====
     window.showDeleteModal = showDeleteModal
+    window.openEditModal = openEditModal
     window.goToManagement = () => {
       if (!isAuthenticated) { 
         document.getElementById('login-modal').classList.remove('hidden'); 
@@ -1355,36 +1769,6 @@
       showPage('management')
       const mgmtBtn = document.querySelector('[data-nav="management"]')
       if (mgmtBtn) updateNavButtons(mgmtBtn)
-    }
-    window.saveSerialNumber = async (id, btn) => {
-      if (!isAuthenticated) { 
-        document.getElementById('login-modal').classList.remove('hidden'); 
-        return 
-      }
-      const input = document.querySelector(`input[data-id="${id}"]`)
-      const newSerial = input.value.toUpperCase().trim()
-      const original = input.dataset.original
-      if (!newSerial) { 
-        showFormMessage('management-success', '❌ SERIAL CANNOT BE EMPTY', true); 
-        input.value = original; 
-        return 
-      }
-      if (newSerial === original) return
-      btn.disabled = true; btn.textContent = '...'
-      try {
-        const { error } = await supabase.from('management_data').update({ serial_number: newSerial }).eq('id', id)
-        if (error) throw error
-        input.dataset.original = newSerial
-        await logAudit('SERIAL UPDATED', `ID: ${id}, NEW: ${newSerial}`)
-        showFormMessage('management-success', '✅ SERIAL UPDATED!')
-        await loadAllData()
-      } catch (error) {
-        console.error('Update serial error:', error)
-        input.value = original
-        showFormMessage('management-success', `❌ ERROR: ${error.message}`, true)
-      } finally {
-        btn.disabled = false; btn.textContent = '✓'
-      }
     }
 
     // ===== START =====
